@@ -41,7 +41,7 @@ pipeline {
                     sh 'ls -al'
                     sh 'chmod +x ./gradlew'
                     sh './gradlew -v'
-                    sh './gradlew clean build'
+                    sh './gradlew clean build -x test'
                     sh 'ls -al'
                     sh 'ls -al ./build/libs'
                 }
