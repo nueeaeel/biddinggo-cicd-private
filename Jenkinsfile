@@ -59,9 +59,10 @@ pipeline {
                         def buildNumber = "${env.BUILD_NUMBER}"
                         withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
                             sh 'docker -v'
-                            sh 'echo $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                            sh 'docker build --no-cache --label org.opencontainers.image.source=$GITHUB_REPOSITORY_URL -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION .'
-                            sh 'docker image inspect $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                            sh 'echo $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                            sh 'docker build --no-cache --label "org.opencontainers.image.source=$GITHUB_REPOSITORY_URL" -t $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION -t $GHCR_IMAGE_NAME:latest .'
+                            sh 'docker image inspect $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                            sh 'docker image inspect $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION --format "{{ index .Config.Labels \\"org.opencontainers.image.source\\" }}"'
                         }
                     }
                 }
@@ -76,8 +77,6 @@ pipeline {
                         withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
                             withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                                 sh 'echo $GITHUB_TOKEN | docker login $GHCR_REGISTRY -u $GITHUB_USER --password-stdin'
-                                sh 'docker tag $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                                sh 'docker tag $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION $GHCR_IMAGE_NAME:latest'
                                 sh 'docker push $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
                                 sh 'docker push $GHCR_IMAGE_NAME:latest'
                                 sh 'docker logout $GHCR_REGISTRY'
