@@ -34,6 +34,7 @@ pipeline {
         GHCR_REGISTRY = 'ghcr.io'
         GHCR_OWNER = 'nueeaeel'
         GHCR_IMAGE_NAME = "${GHCR_REGISTRY}/${GHCR_OWNER}/${DOCKER_IMAGE_NAME}"
+        GITHUB_REPOSITORY_URL = 'https://github.com/nueeaeel/biddinggo-cicd-private'
     }
 
     stages {
@@ -59,7 +60,7 @@ pipeline {
                         withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
                             sh 'docker -v'
                             sh 'echo $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                            sh 'docker build --no-cache -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION .'
+                            sh 'docker build --no-cache --label org.opencontainers.image.source=$GITHUB_REPOSITORY_URL -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION .'
                             sh 'docker image inspect $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
                         }
                     }
