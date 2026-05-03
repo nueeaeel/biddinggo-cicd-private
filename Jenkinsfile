@@ -31,6 +31,9 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_NAME = 'biddinggo-service'
+        GHCR_REGISTRY = 'ghcr.io'
+        GHCR_OWNER = 'biddingmate'
+        GHCR_IMAGE_NAME = 'ghcr.io/biddingmate/biddinggo-service'
     }
 
     stages {
@@ -58,6 +61,26 @@ pipeline {
                             sh 'echo $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
                             sh 'docker build --no-cache -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION .'
                             sh 'docker image inspect $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Push to GHCR') {
+            steps {
+                container('docker') {
+                    script {
+                        def buildNumber = "${env.BUILD_NUMBER}"
+                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
+                            withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
+                                sh 'echo $GITHUB_TOKEN | docker login $GHCR_REGISTRY -u $GITHUB_USER --password-stdin'
+                                sh 'docker tag $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                                sh 'docker tag $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION $GHCR_IMAGE_NAME:latest'
+                                sh 'docker push $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                                sh 'docker push $GHCR_IMAGE_NAME:latest'
+                                sh 'docker logout $GHCR_REGISTRY'
+                            }
                         }
                     }
                 }
