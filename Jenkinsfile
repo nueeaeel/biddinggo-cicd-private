@@ -39,6 +39,7 @@ pipeline {
                 container('gradle') {
                     sh 'pwd'
                     sh 'ls -al'
+                    sh 'chmod +x ./gradlew'
                     sh './gradlew -v'
                     sh './gradlew clean build'
                     sh 'ls -al'
