@@ -1,0 +1,162 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.biddingmate.biddinggo.auctioninquiry.mapper.AuctionInquiryMapper">
+
+    <insert id="insert" parameterType="AuctionInquiry"
+            keyProperty="id" useGeneratedKeys="true">
+        INSERT INTO auction_inquiry (
+            auction_id,
+            writer_id,
+            answerer_id,
+            title,
+            content,
+            secret_yn,
+            status,
+            created_at
+        ) VALUES (
+                     #{auctionId},
+                     #{writerId},
+                     #{answererId},
+                     #{title},
+                     #{content},
+                     #{secretYn},
+                     #{status},
+                     #{createdAt}
+                 )
+    </insert>
+
+    <select id="findInquiryById" parameterType="long" resultType="AuctionInquiry">
+        SELECT
+            id,
+            auction_id AS auctionId,
+            writer_id AS writerId,
+            answerer_id AS answererId,
+            title,
+            content,
+            answer,
+            status,
+            answered_at AS answeredAt,
+            created_at AS createdAt
+        FROM auction_inquiry
+        WHERE id = #{id}
+    </select>
+
+    <update id="updateAnswer" parameterType="AuctionInquiry">
+        UPDATE auction_inquiry
+        SET answer      = #{answer},
+            answerer_id = #{answererId},
+            answered_at = #{answeredAt},
+            status      = #{status}
+        WHERE id = #{id}
+          AND status = 'PENDING'
+    </update>
+
+    <select id="selectInquiryList" resultType="AuctionInquiryView">
+        SELECT
+            ai.id,
+            ai.writer_id AS writerId,
+            ai.title,
+            ai.content,
+            m.nickname AS writerName,
+            ai.answer,
+            ai.answered_at AS answeredAt,
+            ai.secret_yn AS secretYn,
+            ai.status,
+            ai.created_at AS createdAt
+        FROM auction_inquiry ai
+                 LEFT JOIN member m ON ai.writer_id = m.id
+        WHERE ai.auction_id = #{auctionId}
+        ORDER BY ai.created_at DESC
+    </select>
+
+    <select id="selectInquiryCount" resultType="int">
+        SELECT COUNT(*)
+        FROM auction_inquiry
+        WHERE auction_id = #{auctionId}
+    </select>
+
+    <select id="findMyAuctionInquiries" resultType="MemberAuctionInquiryResponse">
+        SELECT
+            id,
+            inquiryType,
+            answerStatus,
+            createdAt,
+            title,
+            content,
+            answer,
+            answeredAt,
+            auctionId
+        FROM (
+        SELECT
+            ai.id AS id,
+            'PURCHASE' AS inquiryType,
+            ai.auction_id AS auctionId,
+            ai.status AS answerStatus,
+            ai.created_at AS createdAt,
+            ai.title AS title,
+            ai.content AS content,
+            ai.answer AS answer,
+            ai.answered_at AS answeredAt
+        FROM auction_inquiry ai
+        WHERE ai.writer_id = #{memberId}
+
+        UNION ALL
+
+        SELECT
+            ai.id AS id,
+            'SALES' AS inquiryType,
+            ai.auction_id AS auctionId,
+            ai.status AS answerStatus,
+            ai.created_at AS createdAt,
+            ai.title AS title,
+            ai.content AS content,
+            ai.answer AS answer,
+            ai.answered_at AS answeredAt
+        FROM auction_inquiry ai
+        INNER JOIN auction a
+        ON ai.auction_id = a.id
+        WHERE a.seller_id = #{memberId}
+        ) t
+        <where>
+            <if test="type != null and type != 'ALL'">
+                t.inquiryType = #{type}
+            </if>
+        </where>
+        ORDER BY createdAt
+        <choose>
+            <when test="pageRequest.order != null and pageRequest.order.toUpperCase() == 'ASC'">
+                ASC
+            </when>
+            <otherwise>
+                DESC
+            </otherwise>
+        </choose>
+        LIMIT #{pageRequest.size}
+        OFFSET #{pageRequest.offset}
+    </select>
+
+    <select id="countMyAuctionInquiries" resultType="long">
+        SELECT COUNT(*)
+        FROM (
+        SELECT 'PURCHASE' AS inquiryType
+        FROM auction_inquiry ai
+        WHERE ai.writer_id = #{memberId}
+
+        UNION ALL
+
+        SELECT 'SALES' AS inquiryType
+        FROM auction_inquiry ai
+        INNER JOIN auction a
+        ON ai.auction_id = a.id
+        WHERE a.seller_id = #{memberId}
+        ) t
+        <where>
+            <if test="type != null and type != 'ALL'">
+                t.inquiryType = #{type}
+            </if>
+        </where>
+    </select>
+</mapper>
+

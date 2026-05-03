@@ -1,0 +1,353 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.biddingmate.biddinggo.winnerdeal.mapper.WinnerDealMapper">
+    <insert id="insert" parameterType="WinnerDeal" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO winner_deal (auction_id,
+                                 winner_id,
+                                 seller_id,
+                                 deal_number,
+                                 winner_price,
+                                 status,
+                                 created_at
+        ) VALUES (#{auctionId},
+                  #{winnerId},
+                  #{sellerId},
+                  #{dealNumber},
+                  #{winnerPrice},
+                  #{status},
+                  #{createdAt}
+        )
+    </insert>
+
+    <select id="findById" resultType="WinnerDeal">
+        SELECT id,
+               auction_id AS auctionId,
+               winner_id AS winnerId,
+               seller_id AS sellerId,
+               deal_number AS dealNumber,
+               winner_price AS winnerPrice,
+               status,
+               confirmed_at AS confirmedAt,
+               zipcode,
+               address,
+               detail_address AS detailAddress,
+               tel,
+               recipient,
+               carrier,
+               tracking_number AS trackingNumber,
+               created_at AS createdAt
+        FROM winner_deal
+        WHERE id = #{id}
+        LIMIT 1
+    </select>
+
+    <select id="findByAuctionId" resultType="WinnerDeal">
+        SELECT id,
+               auction_id AS auctionId,
+               winner_id AS winnerId,
+               seller_id AS sellerId,
+               deal_number AS dealNumber,
+               winner_price AS winnerPrice,
+               status,
+               confirmed_at AS confirmedAt,
+               zipcode,
+               address,
+               detail_address AS detailAddress,
+               tel,
+               recipient,
+               carrier,
+               tracking_number AS trackingNumber,
+               created_at AS createdAt
+        FROM winner_deal
+        WHERE auction_id = #{auctionId}
+        LIMIT 1
+    </select>
+
+    <select id="findByWinnerId" resultType="WinnerDeal">
+        SELECT id,
+               auction_id AS auctionId,
+               winner_id AS winnerId,
+               seller_id AS sellerId,
+               deal_number AS dealNumber,
+               winner_price AS winnerPrice,
+               status,
+               confirmed_at AS confirmedAt,
+               zipcode,
+               address,
+               detail_address AS detailAddress,
+               tel,
+               recipient,
+               carrier,
+               tracking_number AS trackingNumber,
+               created_at AS createdAt
+        FROM winner_deal
+        WHERE winner_id = #{memberId}
+    </select>
+
+    <select id="findBySellerId" resultType="WinnerDeal">
+        SELECT id,
+               auction_id AS auctionId,
+               winner_id AS winnerId,
+               seller_id AS sellerId,
+               deal_number AS dealNumber,
+               winner_price AS winnerPrice,
+               status,
+               confirmed_at AS confirmedAt,
+               zipcode,
+               address,
+               detail_address AS detailAddress,
+               tel,
+               recipient,
+               carrier,
+               tracking_number AS trackingNumber,
+               created_at AS createdAt
+        FROM winner_deal
+        WHERE seller_id = #{memberId}
+    </select>
+
+    <update id="updateStatus">
+        UPDATE winner_deal
+        SET status = #{status}
+        WHERE id = #{id}
+    </update>
+
+    <!-- 구매/판매 내역 조회 시 필터링 조각 -->
+    <sql id="winnerDealHistoryStatusFilter">
+        <if test="request.status != null">
+            <choose>
+                <when test="request.status.name() == 'PAID'">
+                    AND wd.status = 'PAID'
+                </when>
+                <when test="request.status.name() == 'SHIPPED'">
+                    AND wd.status = 'SHIPPED'
+                </when>
+                <when test="request.status.name() == 'CONFIRMED'">
+                    AND wd.status = 'CONFIRMED'
+                </when>
+                <when test="request.status.name() == 'CANCELLED'">
+                    AND wd.status = 'CANCELLED'
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 관리자 거래 내역 조회 시 필터링 조각 -->
+    <sql id="adminWinnerDealHistoryFilter">
+        <if test="request.dealNumber != null and request.dealNumber != ''">
+            AND wd.deal_number LIKE CONCAT('%', #{request.dealNumber}, '%')
+        </if>
+        <if test="request.status != null">
+            <choose>
+                <when test="request.status.name() == 'PAID'">
+                    AND wd.status = 'PAID'
+                </when>
+                <when test="request.status.name() == 'SHIPPED'">
+                    AND wd.status = 'SHIPPED'
+                </when>
+                <when test="request.status.name() == 'CONFIRMED'">
+                    AND wd.status = 'CONFIRMED'
+                </when>
+                <when test="request.status.name() == 'CANCELLED'">
+                    AND wd.status = 'CANCELLED'
+                </when>
+            </choose>
+        </if>
+    </sql>
+
+    <!-- 구매내역 조회 -->
+    <select id="findPurchaseHistory" resultType="WinnerDealHistoryResponse">
+        SELECT wd.id AS winnerDealId,
+               wd.deal_number AS dealNumber,
+               wd.auction_id AS auctionId,
+               ai.id AS itemId,
+               ai.name AS itemName,
+               ii.url AS imageUrl,
+               wd.status AS status,
+               wd.winner_price AS winnerPrice,
+               wd.confirmed_at AS confirmedAt,
+               wd.created_at AS createdAt
+        FROM winner_deal wd
+        JOIN auction a ON wd.auction_id = a.id
+        JOIN auction_item ai ON a.item_id = ai.id
+        LEFT JOIN item_image ii ON ii.item_id = ai.id AND ii.display_order = 1
+        WHERE wd.winner_id = #{memberId}
+        <include refid="winnerDealHistoryStatusFilter"/>
+        ORDER BY wd.created_at DESC, wd.id DESC
+    </select>
+
+    <select id="countPurchaseHistory" resultType="long">
+        SELECT COUNT(*)
+        FROM winner_deal wd
+        JOIN auction a ON wd.auction_id = a.id
+        JOIN auction_item ai ON a.item_id = ai.id
+        WHERE wd.winner_id = #{memberId}
+        <include refid="winnerDealHistoryStatusFilter"/>
+    </select>
+
+    <!-- 판매내역 조회 -->
+    <select id="findSaleHistory" resultType="WinnerDealHistoryResponse">
+        SELECT wd.id AS winnerDealId,
+               wd.deal_number AS dealNumber,
+               wd.auction_id AS auctionId,
+               ai.id AS itemId,
+               ai.name AS itemName,
+               ii.url AS imageUrl,
+               wd.status AS status,
+               wd.winner_price AS winnerPrice,
+               wd.confirmed_at AS confirmedAt,
+               wd.created_at AS createdAt
+        FROM winner_deal wd
+        JOIN auction a ON wd.auction_id = a.id
+        JOIN auction_item ai ON a.item_id = ai.id
+        LEFT JOIN item_image ii ON ii.item_id = ai.id AND ii.display_order = 1
+        WHERE wd.seller_id = #{memberId}
+        <include refid="winnerDealHistoryStatusFilter"/>
+        ORDER BY wd.created_at DESC, wd.id DESC
+    </select>
+
+    <select id="countSaleHistory" resultType="long">
+        SELECT COUNT(*)
+        FROM winner_deal wd
+        JOIN auction a ON wd.auction_id = a.id
+        JOIN auction_item ai ON a.item_id = ai.id
+        WHERE wd.seller_id = #{memberId}
+        <include refid="winnerDealHistoryStatusFilter"/>
+    </select>
+
+    <select id="findWinnerDealDetail" resultType="WinnerDealDetailQueryResult">
+        SELECT wd.id AS winnerDealId,
+               wd.deal_number AS dealNumber,
+               wd.auction_id AS auctionId,
+               ai.id AS itemId,
+               wd.winner_id AS winnerId,
+               wd.seller_id AS sellerId,
+               ai.name AS itemName,
+               ii.url AS itemImageUrl,
+               wd.winner_price AS winnerPrice,
+               wd.status AS status,
+               seller.nickname AS sellerName,
+               winner.nickname AS winnerName,
+               wd.recipient AS recipient,
+               wd.tel AS tel,
+               wd.zipcode AS zipcode,
+               wd.address AS address,
+               wd.detail_address AS detailAddress,
+               wd.carrier AS carrier,
+               wd.tracking_number AS trackingNumber,
+               wd.confirmed_at AS confirmedAt,
+               wd.created_at AS createdAt
+        FROM winner_deal wd
+        JOIN auction a ON wd.auction_id = a.id
+        JOIN auction_item ai ON a.item_id = ai.id
+        LEFT JOIN item_image ii ON ii.item_id = ai.id AND ii.display_order = 1
+        JOIN member seller ON seller.id = wd.seller_id
+        JOIN member winner ON winner.id = wd.winner_id
+        WHERE wd.id = #{winnerDealId}
+        LIMIT 1
+    </select>
+
+    <!-- 구매자의 배송지 등록 -->
+    <update id="updateShippingAddress">
+        UPDATE winner_deal
+        SET zipcode = #{request.zipcode},
+            address = #{request.address},
+            detail_address = #{request.detailAddress},
+            tel = #{request.tel},
+            recipient = #{request.recipient}
+        WHERE id = #{winnerDealId}
+    </update>
+
+    <!-- 판매자의 운송장 등록 -->
+    <update id="updateTrackingNumber">
+        UPDATE winner_deal
+        SET carrier = #{request.carrier},
+            tracking_number = #{request.trackingNumber},
+            status = 'SHIPPED'
+        WHERE id = #{winnerDealId}
+    </update>
+
+    <!-- 구매자 구매확정 -->
+    <update id="confirmPurchase">
+        UPDATE winner_deal
+        SET status = 'CONFIRMED',
+            confirmed_at = #{confirmedAt}
+        WHERE id = #{winnerDealId}
+    </update>
+
+    <!-- 관리자 구매내역 조회 -->
+    <select id="findAdminWinnerDealHistory" resultType="AdminWinnerDealListResponse">
+        SELECT wd.id AS winnerDealId,
+               wd.deal_number AS dealNumber,
+               seller.nickname AS sellerName,
+               winner.nickname AS winnerName,
+               ai.name AS itemName,
+               wd.winner_price AS winnerPrice,
+               wd.created_at AS createdAt,
+               wd.status AS status,
+               a.inspection_yn AS inspectionYn
+        FROM winner_deal wd
+        JOIN auction a ON wd.auction_id = a.id
+        JOIN auction_item ai ON a.item_id = ai.id
+        JOIN member seller ON seller.id = wd.seller_id
+        JOIN member winner ON winner.id = wd.winner_id
+        <where>
+            <include refid="adminWinnerDealHistoryFilter"/>
+        </where>
+        ORDER BY wd.created_at DESC, wd.id DESC
+    </select>
+
+    <select id="countAdminWinnerDealHistory" resultType="long">
+        SELECT COUNT(*)
+        FROM winner_deal wd
+        JOIN auction a ON wd.auction_id = a.id
+        JOIN auction_item ai ON a.item_id = ai.id
+        JOIN member seller ON seller.id = wd.seller_id
+        JOIN member winner ON winner.id = wd.winner_id
+        <where>
+            <include refid="adminWinnerDealHistoryFilter"/>
+        </where>
+    </select>
+
+    <!-- 거래 번호가 존재하는지 여부 -->
+    <select id="existsByDealNumber" resultType="boolean">
+        SELECT EXISTS (
+            SELECT 1
+            FROM winner_deal
+            WHERE deal_number = #{dealNumber}
+        )
+    </select>
+
+    <!-- 관리자 거래 내역 상세 조회 -->
+    <select id="findAdminWinnerDealDetail" resultType="AdminWinnerDealDetailQueryResult">
+        SELECT wd.id AS winnerDealId,
+               wd.deal_number AS dealNumber,
+               wd.auction_id AS auctionId,
+               ai.id AS itemId,
+               ai.name AS itemName,
+               ii.url AS itemImageUrl,
+               a.type AS auctionType,
+               a.inspection_yn AS inspectionYn,
+               wd.status AS status,
+               wd.winner_price AS winnerPrice,
+               seller.nickname AS sellerName,
+               winner.nickname AS winnerName,
+               wd.recipient AS recipient,
+               wd.tel AS tel,
+               wd.zipcode AS zipcode,
+               wd.address AS address,
+               wd.detail_address AS detailAddress,
+               wd.carrier AS carrier,
+               wd.tracking_number AS trackingNumber,
+               wd.confirmed_at AS confirmedAt,
+               wd.created_at AS createdAt
+        FROM winner_deal wd
+        JOIN auction a ON wd.auction_id = a.id
+        JOIN auction_item ai ON a.item_id = ai.id
+        LEFT JOIN item_image ii ON ii.item_id = ai.id AND ii.display_order = 1
+        JOIN member seller ON seller.id = wd.seller_id
+        JOIN member winner ON winner.id = wd.winner_id
+        WHERE wd.id = #{winnerDealId}
+            LIMIT 1
+    </select>
+</mapper>

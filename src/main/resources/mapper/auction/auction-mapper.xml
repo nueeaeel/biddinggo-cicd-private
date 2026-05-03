@@ -1,0 +1,418 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.auction.mapper.AuctionMapper">
+
+    <resultMap id="auctionListResultMap" type="com.biddingmate.biddinggo.auction.dto.AuctionListResponse">
+        <id property="auctionId" column="auction_id"/>
+        <result property="itemId" column="item_id"/>
+        <result property="brand" column="brand"/>
+        <result property="name" column="name"/>
+        <result property="status" column="status"/>
+        <result property="type" column="type"/>
+        <result property="inspectionYn" column="inspection_yn"/>
+        <result property="startPrice" column="start_price"/>
+        <result property="buyNowPrice" column="buy_now_price"/>
+        <result property="vickreyPrice" column="vickrey_price"/>
+        <result property="bidCount" column="bid_count"/>
+        <result property="wishCount" column="wish_count"/>
+        <result property="endDate" column="end_date"/>
+        <result property="representativeImageUrl" column="representative_image_url"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <resultMap id="auctionDetailResultMap" type="com.biddingmate.biddinggo.auction.dto.AuctionDetailResponse">
+        <id property="auctionId" column="auction_id"/>
+        <result property="sellerId" column="seller_id"/>
+        <result property="sellerNickname" column="seller_nickname"/>
+        <result property="sellerImageUrl" column="seller_image_url"/>
+        <result property="sellerGrade" column="seller_grade"/>
+        <result property="sellerCreatedAt" column="seller_created_at"/>
+        <result property="sellerRating" column="seller_rating"/>
+        <result property="sellerReviewCount" column="seller_review_count"/>
+        <result property="status" column="status"/>
+        <result property="type" column="type"/>
+        <result property="inspectionYn" column="inspection_yn"/>
+        <result property="extensionYn" column="extension_yn"/>
+        <result property="startPrice" column="start_price"/>
+        <result property="bidUnit" column="bid_unit"/>
+        <result property="vickreyPrice" column="vickrey_price"/>
+        <result property="buyNowPrice" column="buy_now_price"/>
+        <result property="bidCount" column="bid_count"/>
+        <result property="wishCount" column="wish_count"/>
+        <result property="startDate" column="start_date"/>
+        <result property="endDate" column="end_date"/>
+        <result property="cancelDate" column="cancel_date"/>
+        <result property="createdAt" column="created_at"/>
+        <association property="item" javaType="com.biddingmate.biddinggo.auction.dto.AuctionDetailResponse$Item">
+            <id property="itemId" column="item_id"/>
+            <result property="brand" column="brand"/>
+            <result property="name" column="name"/>
+            <result property="quality" column="quality"/>
+            <result property="description" column="description"/>
+            <association property="category" javaType="com.biddingmate.biddinggo.auction.dto.AuctionDetailResponse$Category">
+                <id property="id" column="category_id"/>
+                <result property="name" column="category_name"/>
+                <result property="level" column="category_level"/>
+            </association>
+        </association>
+    </resultMap>
+
+    <insert id="insert" parameterType="Auction" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO auction
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            item_id,
+            seller_id,
+            <if test="winnerId != null">winner_id,</if>
+            <if test="type != null">type,</if>
+            <if test="inspectionYn != null">inspection_yn,</if>
+            <if test="extensionYn != null">extension_yn,</if>
+            <if test="status != null">status,</if>
+            <if test="startPrice != null">start_price,</if>
+            <if test="bidUnit != null">bid_unit,</if>
+            <if test="vickreyPrice != null">vickrey_price,</if>
+            <if test="bidCount != null">bid_count,</if>
+            <if test="buyNowPrice != null">buy_now_price,</if>
+            <if test="wishCount != null">wish_count,</if>
+            start_date,
+            end_date,
+            <if test="cancelDate != null">cancel_date,</if>
+            <if test="winnerPrice != null">winner_price,</if>
+            created_at
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            #{itemId},
+            #{sellerId},
+            <if test="winnerId != null">#{winnerId},</if>
+            <if test="type != null">#{type},</if>
+            <if test="inspectionYn != null">#{inspectionYn},</if>
+            <if test="extensionYn != null">#{extensionYn},</if>
+            <if test="status != null">#{status},</if>
+            <if test="startPrice != null">#{startPrice},</if>
+            <if test="bidUnit != null">#{bidUnit},</if>
+            <if test="vickreyPrice != null">#{vickreyPrice},</if>
+            <if test="bidCount != null">#{bidCount},</if>
+            <if test="buyNowPrice != null">#{buyNowPrice},</if>
+            <if test="wishCount != null">#{wishCount},</if>
+            #{startDate},
+            #{endDate},
+            <if test="cancelDate != null">#{cancelDate},</if>
+            <if test="winnerPrice != null">#{winnerPrice},</if>
+            #{createdAt}
+        </trim>
+    </insert>
+
+    <select id="findDetailById" parameterType="long" resultMap="auctionDetailResultMap">
+        SELECT
+            a.id AS auction_id,
+            a.seller_id,
+            m.nickname AS seller_nickname,
+            m.image_url AS seller_image_url,
+            m.grade AS seller_grade,
+            m.created_at AS seller_created_at,
+            COALESCE(sr.seller_rating, 0) AS seller_rating,
+            COALESCE(sr.seller_review_count, 0) AS seller_review_count,
+            a.type,
+            a.inspection_yn,
+            a.extension_yn,
+            a.status,
+            a.start_price,
+            a.bid_unit,
+            a.vickrey_price,
+            a.buy_now_price,
+            a.bid_count,
+            a.wish_count,
+            a.start_date,
+            a.end_date,
+            a.cancel_date,
+            a.created_at,
+            ai.id AS item_id,
+            ai.brand,
+            ai.name,
+            ai.quality,
+            ai.description,
+            c3.id AS category_id,
+            c3.name AS category_name,
+            c3.level AS category_level
+        FROM auction a
+        INNER JOIN auction_item ai ON a.item_id = ai.id
+        INNER JOIN category c3 ON ai.category_id = c3.id
+        INNER JOIN member m ON a.seller_id = m.id
+        LEFT JOIN (
+            SELECT
+                target_id,
+                AVG(rating) AS seller_rating,
+                COUNT(*) AS seller_review_count
+            FROM review
+            GROUP BY target_id
+        ) sr ON sr.target_id = a.seller_id
+        WHERE a.id = #{auctionId}
+    </select>
+
+    <select id="findAuctionList" parameterType="map" resultMap="auctionListResultMap">
+        SELECT
+            a.id AS auction_id,
+            ai.id AS item_id,
+            ai.brand,
+            ai.name,
+            a.status,
+            a.type,
+            a.inspection_yn,
+            a.extension_yn,
+            a.start_price,
+            a.buy_now_price,
+            a.vickrey_price,
+            a.bid_count,
+            a.wish_count,
+            a.end_date,
+            ii.url AS representative_image_url,
+            a.created_at
+        FROM auction a
+        INNER JOIN auction_item ai ON a.item_id = ai.id
+        LEFT JOIN item_image ii ON ii.item_id = ai.id
+            AND ii.display_order = (
+                SELECT MIN(ii2.display_order)
+                FROM item_image ii2
+                WHERE ii2.item_id = ai.id
+            )
+        WHERE 1 = 1
+        <if test="status != null">
+            AND a.status = #{status}
+        </if>
+        <if test="sellerId != null">
+            AND a.seller_id = #{sellerId}
+        </if>
+        <if test="categoryId != null">
+            AND ai.category_id = #{categoryId}
+        </if>
+        ORDER BY
+        <choose>
+            <when test='sortBy == "PRICE"'>COALESCE(a.vickrey_price, a.start_price) ${order}, a.created_at DESC</when>
+            <when test='sortBy == "POPULARITY"'>(a.bid_count + a.wish_count) ${order}, a.created_at DESC</when>
+            <when test='sortBy == "WISH_COUNT"'>a.wish_count ${order}, a.created_at DESC</when>
+            <when test='sortBy == "END_DATE"'>a.end_date ${order}, a.created_at DESC</when>
+            <otherwise>a.created_at ${order}</otherwise>
+        </choose>
+    </select>
+
+    <select id="countAuctionList" parameterType="map" resultType="_int">
+        SELECT COUNT(*)
+        FROM auction a
+        INNER JOIN auction_item ai ON a.item_id = ai.id
+        WHERE 1 = 1
+        <if test="status != null">
+            AND a.status = #{status}
+        </if>
+        <if test="sellerId != null">
+            AND a.seller_id = #{sellerId}
+        </if>
+        <if test="categoryId != null">
+            AND ai.category_id = #{categoryId}
+        </if>
+    </select>
+
+    <select id="findAuctionListByAuctionIds" parameterType="map" resultMap="auctionListResultMap">
+        <!--
+            Supabase semantic search가 뽑은 후보 auction_id 집합을 실제 경매 목록으로 변환한다.
+            최종 노출 조건은 진행 중 경매만 허용하고, 정렬은 기존 목록 조회 규칙을 재사용한다.
+        -->
+        SELECT
+            a.id AS auction_id,
+            ai.id AS item_id,
+            ai.brand,
+            ai.name,
+            a.status,
+            a.type,
+            a.inspection_yn,
+            a.start_price,
+            a.buy_now_price,
+            a.vickrey_price,
+            a.bid_count,
+            a.wish_count,
+            a.end_date,
+            ii.url AS representative_image_url,
+            a.created_at
+        FROM auction a
+        INNER JOIN auction_item ai ON a.item_id = ai.id
+        LEFT JOIN item_image ii ON ii.item_id = ai.id
+            AND ii.display_order = (
+                SELECT MIN(ii2.display_order)
+                FROM item_image ii2
+                WHERE ii2.item_id = ai.id
+            )
+        WHERE a.id IN
+        <foreach collection="auctionIds" item="auctionId" open="(" separator="," close=")">
+            #{auctionId}
+        </foreach>
+        <if test="status != null">
+            AND a.status = #{status}
+        </if>
+        ORDER BY
+        <choose>
+            <when test='sortBy == "PRICE"'>COALESCE(a.vickrey_price, a.start_price) ${order}, a.created_at DESC</when>
+            <when test='sortBy == "POPULARITY"'>(a.bid_count + a.wish_count) ${order}, a.created_at DESC</when>
+            <when test='sortBy == "WISH_COUNT"'>a.wish_count ${order}, a.created_at DESC</when>
+            <when test='sortBy == "END_DATE"'>a.end_date ${order}, a.created_at DESC</when>
+            <otherwise>a.created_at ${order}</otherwise>
+        </choose>
+    </select>
+
+    <select id="countAuctionListByAuctionIds" parameterType="map" resultType="_int">
+        <!-- semantic search 후보 집합 중 실제로 노출 가능한 경매 수를 센다. -->
+        SELECT COUNT(*)
+        FROM auction a
+        WHERE a.id IN
+        <foreach collection="auctionIds" item="auctionId" open="(" separator="," close=")">
+            #{auctionId}
+        </foreach>
+        <if test="status != null">
+            AND a.status = #{status}
+        </if>
+    </select>
+
+    <select id="findById" parameterType="long" resultType="com.biddingmate.biddinggo.auction.model.Auction">
+        SELECT id,
+               item_id AS itemId,
+               winner_id AS winnerId,
+               seller_id AS sellerId,
+               type,
+               inspection_yn AS inspectionYn,
+               extension_yn AS extensionYn,
+               status,
+               start_price AS startPrice,
+               bid_unit AS bidUnit,
+               vickrey_price AS vickreyPrice,
+               bid_count AS bidCount,
+               buy_now_price AS buyNowPrice,
+               wish_count AS wishCount,
+               start_date AS startDate,
+               end_date AS endDate,
+               cancel_date AS cancelDate,
+               winner_price AS winnerPrice,
+               created_at AS createdAt
+        FROM auction
+        WHERE id = #{auctionId}
+    </select>
+
+    <select id="findByIdForUpdate" parameterType="long" resultType="Auction">
+        SELECT id,
+               item_id AS itemId,
+               winner_id AS winnerId,
+               seller_id AS sellerId,
+               type,
+               inspection_yn AS inspectionYn,
+               extension_yn AS extensionYn,
+               status,
+               start_price AS startPrice,
+               bid_unit AS bidUnit,
+               vickrey_price AS vickreyPrice,
+               bid_count AS bidCount,
+               buy_now_price AS buyNowPrice,
+               wish_count AS wishCount,
+               start_date AS startDate,
+               end_date AS endDate,
+               cancel_date AS cancelDate,
+               winner_price AS winnerPrice,
+               created_at AS createdAt
+        FROM auction
+        WHERE id = #{id}
+        FOR UPDATE
+    </select>
+
+    <update id="updateAfterBid" parameterType="map">
+        UPDATE auction
+        SET
+            <if test="vickreyPrice != null"> vickrey_price = #{vickreyPrice},</if>
+            bid_count = bid_count+1
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateAuction" parameterType="Auction">
+        UPDATE auction
+        SET start_price = #{startPrice},
+            bid_unit = #{bidUnit},
+            buy_now_price = #{buyNowPrice},
+            start_date = #{startDate},
+            end_date = #{endDate}
+        WHERE id = #{id}
+    </update>
+
+    <update id="cancelAuction" parameterType="map">
+        UPDATE auction
+        SET status = #{newStatus},
+            cancel_date = #{cancelDate}
+        WHERE id = #{auctionId}
+    </update>
+
+    <update id="updateWishCount" parameterType="map">
+        UPDATE auction
+        SET wish_count = wish_count + #{wishCount}
+        WHERE id = #{id}
+    </update>
+
+    <select id="findActiveAuctionIdsBySeller" resultType="long">
+        SELECT id
+        FROM auction
+        WHERE seller_id = #{sellerId}
+          AND status = 'ON_GOING'
+    </select>
+
+    <update id="updateAuctionStatus">
+        UPDATE auction
+        SET status = #{status}
+        WHERE id IN
+        <foreach collection="auctionIds" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </update>
+
+    <!-- 입찰 1위를 제외(비활성화)하고 남은 활성화 사용자들의 입찰이 1명 이하인 경우 -->
+    <update id="resetVickreyPriceToStartPrice" parameterType="long">
+        UPDATE auction
+        SET vickrey_price = null
+        WHERE id = #{auctionId}
+    </update>
+
+    <!-- 비크리 차순위 승계 -->
+    <update id="updateVickreyPrice" parameterType="map">
+        UPDATE auction
+        SET vickrey_price = #{amount}
+        WHERE id = #{auctionId}
+          AND vickrey_price != #{amount}
+    </update>
+
+    <update id="decreaseBidCountByDeactiveMember" parameterType="long">
+        UPDATE auction a
+        JOIN (SELECT auction_id,
+                     COUNT(*) AS cnt
+              FROM bid
+              WHERE bidder_id = #{memberId}
+                AND status = 'INACTIVE'
+              GROUP BY auction_id
+        ) b ON a.id = b.auction_id
+        SET a.bid_count = GREATEST(a.bid_count - b.cnt  , 0)
+        WHERE a.status = 'ON_GOING'
+    </update>
+  
+    <select id="findExpiredAuctions" resultType="Auction">
+        SELECT * FROM auction
+        WHERE status = #{status}
+          AND end_date &lt;= #{now}
+    </select>
+
+    <update id="updateAuctionResult" parameterType="Auction">
+        UPDATE auction
+        SET status = #{status},
+            winner_id = #{winnerId},
+            winner_price = #{winnerPrice}
+        WHERE id = #{id}
+    </update>
+    <update id="extendAuctionTime">
+        UPDATE auction
+        SET end_date = DATE_ADD(end_date, INTERVAL 3 MINUTE),
+            extension_yn = 'YES'
+        WHERE id = #{id}
+          AND extension_yn = 'NO'
+          AND status = 'ON_GOING'
+    </update>
+</mapper>

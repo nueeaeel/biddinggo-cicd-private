@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.point.mapper.PointHistoryMapper">
+
+    <insert id="insert" parameterType="PointHistory" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO point_history (
+            member_id,
+            payment_id,
+            bid_id,
+            type,
+            amount,
+            created_at
+        )
+        VALUES (
+                   #{memberId},
+                   #{paymentId},
+                   #{bidId},
+                   #{type},
+                   #{amount},
+                   #{createdAt}
+               );
+    </insert>
+
+    <!-- 회원별 포인트 히스토리 조회 -->
+    <select id="findByMemberId" parameterType="map" resultType="PointHistoryDto">
+        SELECT id,
+               type,
+               amount,
+               created_at
+        FROM point_history
+        WHERE member_id = #{memberId}
+        ORDER BY created_at ${order}
+    </select>
+
+    <!-- 회원별 총 건수 조회 -->
+    <select id="countByMemberId" parameterType="long" resultType="int">
+        SELECT COUNT(*)
+        FROM point_history
+        WHERE member_id = #{memberId}
+    </select>
+
+</mapper>

@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.item.mapper.ItemImageMapper">
+
+    <resultMap id="auctionDetailImageResultMap" type="com.biddingmate.biddinggo.auction.dto.AuctionDetailResponse$Image">
+        <result property="url" column="url"/>
+        <result property="displayOrder" column="display_order"/>
+    </resultMap>
+
+    <resultMap id="inspectionDetailImageResultMap" type="com.biddingmate.biddinggo.inspection.dto.InspectionDetailResponse$Image">
+        <result property="url" column="url"/>
+        <result property="displayOrder" column="display_order"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="ItemImage" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO item_image(
+            item_id,
+            url,
+            display_order,
+            type,
+            size,
+            created_at
+        ) VALUES (
+            #{itemId},
+            #{url},
+            #{displayOrder},
+            #{type},
+            #{size},
+            #{createdAt}
+        )
+    </insert>
+
+    <select id="findDetailImagesByItemId" parameterType="long" resultMap="auctionDetailImageResultMap">
+        SELECT
+            url,
+            display_order
+        FROM item_image
+        WHERE item_id = #{itemId}
+        ORDER BY display_order ASC
+    </select>
+
+    <select id="findInspectionDetailImagesByItemId" parameterType="long" resultMap="inspectionDetailImageResultMap">
+        SELECT
+            url,
+            display_order
+        FROM item_image
+        WHERE item_id = #{itemId}
+        ORDER BY display_order ASC
+    </select>
+
+</mapper>

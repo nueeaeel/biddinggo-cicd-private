@@ -1,0 +1,230 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.inspection.mapper.InspectionMapper">
+
+    <resultMap id="inspectionListResultMap" type="com.biddingmate.biddinggo.inspection.dto.InspectionListResponse">
+        <id property="inspectionId" column="inspection_id"/>
+        <result property="itemId" column="item_id"/>
+        <result property="brand" column="brand"/>
+        <result property="name" column="name"/>
+        <result property="quality" column="quality"/>
+        <result property="inspectionStatus" column="inspection_status"/>
+        <result property="auctionItemStatus" column="auction_item_status"/>
+        <result property="representativeImageUrl" column="representative_image_url"/>
+        <result property="carrier" column="carrier"/>
+        <result property="trackingNumber" column="tracking_number"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <resultMap id="inspectionResultMap" type="Inspection">
+        <id property="id" column="id"/>
+        <result property="itemId" column="item_id"/>
+        <result property="receivedAt" column="received_at"/>
+        <result property="status" column="status"/>
+        <result property="completedAt" column="completed_at"/>
+        <result property="failureReason" column="failure_reason"/>
+        <result property="carrier" column="carrier"/>
+        <result property="trackingNumber" column="tracking_number"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <resultMap id="inspectionDetailResultMap" type="com.biddingmate.biddinggo.inspection.dto.InspectionDetailResponse">
+        <id property="inspectionId" column="inspection_id"/>
+        <result property="status" column="inspection_status"/>
+        <result property="receivedAt" column="received_at"/>
+        <result property="completedAt" column="completed_at"/>
+        <result property="failureReason" column="failure_reason"/>
+        <result property="carrier" column="carrier"/>
+        <result property="trackingNumber" column="tracking_number"/>
+        <result property="createdAt" column="inspection_created_at"/>
+        <association property="item" javaType="com.biddingmate.biddinggo.inspection.dto.InspectionDetailResponse$Item">
+            <id property="itemId" column="item_id"/>
+            <result property="sellerId" column="seller_id"/>
+            <result property="brand" column="brand"/>
+            <result property="name" column="name"/>
+            <result property="quality" column="quality"/>
+            <result property="description" column="description"/>
+            <association property="category" javaType="com.biddingmate.biddinggo.inspection.dto.InspectionDetailResponse$Category">
+                <id property="id" column="category_id"/>
+                <result property="name" column="category_name"/>
+                <result property="level" column="category_level"/>
+            </association>
+        </association>
+    </resultMap>
+
+    <select id="findById" parameterType="long" resultMap="inspectionResultMap">
+        SELECT
+            id,
+            item_id,
+            received_at,
+            status,
+            completed_at,
+            failure_reason,
+            carrier,
+            tracking_number,
+            created_at
+        FROM inspection
+        WHERE id = #{id}
+    </select>
+
+    <select id="findInspectionList" parameterType="map" resultMap="inspectionListResultMap">
+        SELECT
+            i.id AS inspection_id,
+            ai.id AS item_id,
+            ai.brand,
+            ai.name,
+            ai.quality,
+            ai.inspection_status,
+            ai.status AS auction_item_status,
+            ii.url AS representative_image_url,
+            i.carrier,
+            i.tracking_number,
+            i.created_at
+        FROM inspection i
+        INNER JOIN auction_item ai ON i.item_id = ai.id
+        LEFT JOIN item_image ii ON ii.item_id = ai.id
+            AND ii.display_order = (
+                SELECT MIN(ii2.display_order)
+                FROM item_image ii2
+                WHERE ii2.item_id = ai.id
+            )
+        WHERE ai.seller_id = #{memberId}
+        <if test="status != null">
+            AND ai.inspection_status = #{status}
+        </if>
+        ORDER BY i.created_at DESC
+    </select>
+
+    <select id="countInspectionList" parameterType="map" resultType="_int">
+        SELECT COUNT(*)
+        FROM inspection i
+        INNER JOIN auction_item ai ON i.item_id = ai.id
+        WHERE ai.seller_id = #{memberId}
+        <if test="status != null">
+            AND ai.inspection_status = #{status}
+        </if>
+    </select>
+
+    <update id="updateShippingInfo">
+        UPDATE inspection
+        SET carrier = #{carrier},
+            tracking_number = #{trackingNumber}
+        WHERE id = #{inspectionId}
+        <if test="currentStatus != null">
+            AND status = #{currentStatus}
+        </if>
+        AND carrier IS NULL
+        AND tracking_number IS NULL
+    </update>
+
+    <select id="findDetailById" parameterType="long" resultMap="inspectionDetailResultMap">
+        SELECT
+            i.id AS inspection_id,
+            i.status AS inspection_status,
+            i.received_at,
+            i.completed_at,
+            i.failure_reason,
+            i.carrier,
+            i.tracking_number,
+            i.created_at AS inspection_created_at,
+            ai.id AS item_id,
+            ai.seller_id,
+            ai.brand,
+            ai.name,
+            ai.quality,
+            ai.description,
+            c.id AS category_id,
+            c.name AS category_name,
+            c.level AS category_level
+        FROM inspection i
+        INNER JOIN auction_item ai ON i.item_id = ai.id
+        INNER JOIN category c ON ai.category_id = c.id
+        WHERE i.id = #{inspectionId}
+    </select>
+
+    <insert id="insert" parameterType="Inspection" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO inspection
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            item_id,
+            <if test="receivedAt != null">received_at,</if>
+            <if test="status != null">status,</if>
+            <if test="completedAt != null">completed_at,</if>
+            <if test="failureReason != null">failure_reason,</if>
+            <if test="carrier != null">carrier,</if>
+            <if test="trackingNumber != null">tracking_number,</if>
+            created_at
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            #{itemId},
+            <if test="receivedAt != null">#{receivedAt},</if>
+            <if test="status != null">#{status},</if>
+            <if test="completedAt != null">#{completedAt},</if>
+            <if test="failureReason != null">#{failureReason},</if>
+            <if test="carrier != null">#{carrier},</if>
+            <if test="trackingNumber != null">#{trackingNumber},</if>
+            #{createdAt}
+        </trim>
+    </insert>
+
+    <!-- 관리자 검수 요청 물품 조회 -->
+    <select id="findAllWithFilter" parameterType="InspectionListRequest" resultType="AdminInspectionListResponse">
+        SELECT i.id AS inspectionId,
+               ai.id AS itemId,
+               ai.name AS name,
+               m.nickname AS sellerNickname,
+               i.status AS status,
+               ai.quality AS quality,
+               i.created_at AS createdAt
+        FROM inspection i
+        INNER JOIN auction_item ai ON i.item_id = ai.id
+        LEFT JOIN member m ON ai.seller_id = m.id
+        <where>
+            <if test="request.status != null">
+                AND i.status = #{request.status}
+            </if>
+            <if test="request.name != null and request.name != ''">
+                AND ai.name LIKE CONCAT('%', #{request.name}, '%')
+            </if>
+        </where>
+        ORDER BY i.created_at ${order}
+    </select>
+
+    <!-- 관리자 검수 요청 물품 조회 페이징 카운트 -->
+    <select id="countWithFilter"
+            parameterType="InspectionListRequest"
+            resultType="long">
+        SELECT COUNT(*)
+        FROM inspection i
+        INNER JOIN auction_item ai ON i.item_id = ai.id
+        <where>
+            <if test="status != null">
+                AND i.status = #{status}
+            </if>
+            <if test="name != null and name != ''">
+                AND ai.name LIKE CONCAT('%', #{name}, '%')
+            </if>
+        </where>
+    </select>
+
+    <update id="updateStatus">
+        UPDATE inspection
+        <set>
+            status = #{newStatus},
+            <if test="newStatus.name() != 'PENDING'">
+                completed_at = NOW(),
+            </if>
+            <if test="newStatus.name() == 'FAILED' and failureReason != null">
+                failure_reason = #{failureReason},
+            </if>
+            <if test="newStatus.name() != 'FAILED'">
+                failure_reason = NULL,
+            </if>
+        </set>
+        WHERE id = #{inspectionId}
+        <if test="currentStatus != null">
+            AND status = #{currentStatus}
+        </if>
+    </update>
+
+</mapper>

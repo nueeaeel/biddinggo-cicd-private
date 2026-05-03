@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.wishlist.mapper.WishlistMapper">
+    <resultMap id="auctionListResultMap" type="AuctionListResponse">
+        <id property="auctionId" column="auction_id"/>
+        <result property="itemId" column="item_id"/>
+        <result property="brand" column="brand"/>
+        <result property="name" column="name"/>
+        <result property="status" column="status"/>
+        <result property="type" column="type"/>
+        <result property="inspectionYn" column="inspection_yn"/>
+        <result property="startPrice" column="start_price"/>
+        <result property="buyNowPrice" column="buy_now_price"/>
+        <result property="vickreyPrice" column="vickrey_price"/>
+        <result property="bidCount" column="bid_count"/>
+        <result property="wishCount" column="wish_count"/>
+        <result property="endDate" column="end_date"/>
+        <result property="representativeImageUrl" column="representative_image_url"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="Wishlist" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO wishlist(
+            member_id,
+            auction_id,
+            created_at
+        ) VALUES (
+            #{memberId},
+            #{auctionId},
+            #{createdAt}
+         )
+    </insert>
+
+    <select id="findByMemberIdAndAuctionId" parameterType="map" resultType="long">
+        SELECT id
+        FROM wishlist
+        WHERE member_id = #{memberId}
+          AND auction_id = #{auctionId}
+    </select>
+
+    <select id="getCountByMemberId" parameterType="long" resultType="int">
+        SELECT COUNT(*)
+        FROM wishlist
+        WHERE member_id = #{memberId}
+    </select>
+
+    <select id="findWishlistAuctionsByMemberId" parameterType="map" resultMap="auctionListResultMap">
+        SELECT
+        a.id AS auction_id,
+        ai.id AS item_id,
+        ai.brand,
+        ai.name,
+        a.status,
+        a.type,
+        a.inspection_yn,
+        a.start_price,
+        a.buy_now_price,
+        a.vickrey_price,
+        a.bid_count,
+        a.wish_count,
+        a.end_date,
+        ii.url AS representative_image_url,
+        a.created_at
+        FROM auction a
+        INNER JOIN wishlist w ON a.id = w.auction_id
+        INNER JOIN auction_item ai ON a.item_id = ai.id
+        LEFT JOIN item_image ii ON ii.item_id = ai.id
+            AND ii.display_order = (
+                SELECT MIN(ii2.display_order)
+                FROM item_image ii2
+                WHERE ii2.item_id = ai.id
+            )
+        WHERE w.member_id = #{memberId}
+        ORDER BY
+        <choose>
+            <when test='sortBy == "PRICE"'>COALESCE(a.vickrey_price, a.start_price) ${order}, a.created_at DESC</when>
+            <when test='sortBy == "POPULARITY"'>(a.bid_count + a.wish_count) ${order}, a.created_at DESC</when>
+            <when test='sortBy == "WISH_COUNT"'>a.wish_count ${order}, a.created_at DESC</when>
+            <when test='sortBy == "END_DATE"'>a.end_date ${order}, a.created_at DESC</when>
+            <otherwise>a.created_at ${order}</otherwise>
+        </choose>
+    </select>
+
+    <delete id="delete" parameterType="map">
+        DELETE
+        FROM wishlist
+        WHERE auction_id = #{auctionId}
+          AND member_id = #{memberId}
+    </delete>
+</mapper>

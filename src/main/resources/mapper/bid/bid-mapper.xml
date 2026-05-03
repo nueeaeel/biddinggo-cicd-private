@@ -1,0 +1,193 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.bid.mapper.BidMapper">
+    <resultMap id="BidMap" type="Bid">
+        <id property="id" column="id"/>
+        <result property="auctionId" column="auction_id"/>
+        <result property="bidderId" column="bidder_id"/>
+        <result property="amount" column="amount"/>
+        <result property="createdAt" column="created_at"/>
+    </resultMap>
+
+    <insert id="insert" parameterType="Bid" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bid(
+            auction_id,
+            bidder_id,
+            amount,
+            created_at
+        ) VALUES (
+                     #{auctionId},
+                     #{bidderId},
+                     #{amount},
+                     #{createdAt}
+                 )
+    </insert>
+
+    <select id="getLastBidAmountByMemberId" resultType="long">
+        SELECT amount
+        FROM bid
+        WHERE auction_id = #{auctionId}
+          AND bidder_id = #{bidderId}
+          AND status = 'ACTIVE'
+        ORDER BY created_at DESC
+        LIMIT 1
+    </select>
+
+    <select id="getVickreyBid" resultMap="BidMap">
+        SELECT id,
+               auction_id,
+               bidder_id,
+               amount,
+               created_at
+        FROM bid
+        WHERE auction_id = #{auctionId}
+          AND status = 'ACTIVE'
+        ORDER BY amount DESC, created_at
+        LIMIT 1 OFFSET 1
+    </select>
+
+    <select id="getBidCount" parameterType="map" resultType="int">
+        <choose>
+            <when test="auctionId != null">
+                SELECT COUNT(*) FROM bid WHERE auction_id = #{auctionId} AND status = 'ACTIVE'
+            </when>
+            <when test="bidderId != null">
+                SELECT COUNT(*) FROM bid WHERE bidder_id = #{bidderId} AND status = 'ACTIVE'
+            </when>
+            <otherwise>
+                SELECT 0
+            </otherwise>
+        </choose>
+    </select>
+
+    <select id="getBidsByAuctionId" parameterType="map" resultType="BidResponse">
+        SELECT id,
+               auction_id AS auctionId,
+               bidder_id AS bidderId,
+               amount,
+               created_at AS createdAt
+        FROM bid
+        WHERE auction_id = #{auctionId}
+          AND status = 'ACTIVE'
+        ORDER BY amount DESC, created_at ASC
+    </select>
+
+    <select id="findBidAuctionsByMemberId" parameterType="map" resultType="BidListResponse">
+        SELECT
+            b.id AS id,
+            a.id AS auction_id,
+            a.status,
+            a.start_price AS startPrice,
+            a.vickrey_price AS vickreyPrice,
+            a.bid_count AS bidCount,
+            a.wish_count AS wishCount,
+            a.start_date AS startDate,
+            a.end_date AS endDate,
+            a.cancel_date AS cancelDate,
+            ai.name,
+            ii.url AS representative_image_url,
+            b.amount AS amount,
+            b.created_at AS createdAt
+
+        FROM auction a
+            INNER JOIN bid b ON a.id = b.auction_id
+            INNER JOIN auction_item ai ON a.item_id = ai.id
+            LEFT JOIN item_image ii ON ii.item_id = ai.id
+                AND ii.display_order = (
+                    SELECT MIN(ii2.display_order)
+                    FROM item_image ii2
+                    WHERE ii2.item_id = ai.id
+                )
+        WHERE b.bidder_id = #{memberId}
+          AND b.status = 'ACTIVE'
+    </select>
+
+    <select id="findOngoingAuctionIdsByMember" parameterType="long" resultType="long">
+        SELECT DISTINCT b.auction_id
+        FROM bid b
+        JOIN auction a ON b.auction_id = a.id
+        WHERE b.bidder_id = #{memberId}
+          AND a.status = 'ON_GOING'
+          AND b.status = 'INACTIVE'
+    </select>
+
+    <!-- 활성화 중인 최고 입찰자 조회 (전체 기준) -->
+    <select id="findTopBidderId" parameterType="long" resultType="long">
+        SELECT b.bidder_id
+        FROM bid b
+        WHERE b.auction_id = #{auctionId}
+          AND b.status = 'ACTIVE'
+        ORDER BY b.amount DESC
+        LIMIT 1
+    </select>
+
+    <!-- 활성화 중인 상위 2개 입찰 조회 (비크리 핵심) -->
+    <select id="findTop2ActiveBids" parameterType="long" resultType="Bid">
+        SELECT b.id,
+               b.auction_id,
+               b.bidder_id,
+               b.amount
+        FROM bid b
+        WHERE b.auction_id = #{auctionId}
+          AND b.status = 'ACTIVE'
+        ORDER BY b.amount DESC
+        LIMIT 2
+    </select>
+
+    <select id="findRefundTargets" resultType="RefundDto">
+        SELECT b.bidder_id AS bidderId,
+               MAX(b.amount) AS amount
+        FROM bid b
+        WHERE b.auction_id IN
+        <foreach collection="auctionIds" item="auctionId" open="(" separator="," close=")">
+            #{auctionId}
+        </foreach>
+        AND b.status = 'ACTIVE'
+        GROUP BY b.auction_id, b.bidder_id
+    </select>
+
+    <!-- 비활성화 된 사용자의 최고 입찰 조회 -->
+    <select id="findMaxBidAmountByAuctionAndBidder" parameterType="map" resultType="long">
+        SELECT MAX(amount)
+        FROM bid
+        WHERE auction_id = #{auctionId}
+          AND bidder_id = #{bidderId}
+          AND status = 'INACTIVE'
+    </select>
+
+    <select id="findMaxBidAmountByAuctionAndBidder2" parameterType="map" resultType="long">
+        SELECT MAX(amount)
+        FROM bid
+        WHERE auction_id = #{auctionId}
+          AND bidder_id = #{bidderId}
+    </select>
+
+    <!-- 비활성화 처리 과정에서 bid 상태가 이미 INACTIVE로 바뀔 수 있으므로 상태와 무관하게 최고 입찰금을 조회한다. -->
+    <select id="findMaxBidAmountByAuctionAndBidderRegardlessStatus" parameterType="map" resultType="long">
+        SELECT MAX(amount)
+        FROM bid
+        WHERE auction_id = #{auctionId}
+          AND bidder_id = #{bidderId}
+    </select>
+
+    <!-- 비활성화 시 입찰 무효화 -->
+    <update id="invalidateBidsByMember" parameterType="long">
+        UPDATE bid
+        SET status = 'INACTIVE'
+        WHERE bidder_id = #{memberId}
+          AND status = 'ACTIVE'
+    </update>
+
+    <!-- 낙찰자 제외 입찰자 환불 대상 조회 -->
+    <select id="findRefundTargetsExcludingWinner" resultType="RefundDto">
+        SELECT b.bidder_id AS bidderId,
+               MAX(b.amount) AS amount
+        FROM bid b
+        WHERE b.auction_id = #{auctionId}
+          AND b.status = 'ACTIVE'
+          AND b.bidder_id != #{winnerId}
+        GROUP BY b.bidder_id
+    </select>
+
+</mapper>

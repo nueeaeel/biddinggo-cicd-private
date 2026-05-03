@@ -1,0 +1,2 @@
+ALTER TABLE admin_inquiry
+    MODIFY COLUMN admin_id BIGINT DEFAULT NULL;

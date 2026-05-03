@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 성공!</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #e8f5e9; margin: 0; }
+        .card { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); text-align: center; }
+        h1 { color: #2e7d32; }
+        p { color: #666; }
+        .btn { display: inline-block; margin-top: 20px; padding: 10px 20px; background: #2e7d32; color: white; text-decoration: none; border-radius: 5px; }
+        #user-info { margin-top: 15px; font-weight: bold; color: #1b5e20; border-top: 1px dashed #ccc; padding-top: 15px; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h1>🎉 로그인 성공!</h1>
+
+    <div id="user-info">데이터를 불러오는 중...</div>
+
+    <a href="/" class="btn">메인으로 돌아가기</a>
+</div>
+
+<script>
+    window.onload = function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        // .trim()을 사용하여 혹시 모를 공백이나 줄바꿈을 제거합니다.
+        const accessToken = urlParams.get('accessToken')?.trim();
+
+        if (!accessToken) {
+            document.getElementById('user-info').innerHTML = "❌ 토큰이 URL에 없습니다.";
+            return;
+        }
+
+        fetch('/api/v1/auth/check', {
+            method: 'GET',
+            headers: {
+                // 백틱(`)을 사용하고 띄어쓰기 한 칸만 엄격하게 유지합니다.
+                'Authorization': `Bearer ${accessToken}`,
+                'Accept': 'application/json'
+            }
+        })
+            .then(response => {
+                if (response.ok) return response.json();
+                // 에러 시 상태 코드를 더 자세히 봅니다.
+                throw new Error(`Status: ${response.status}`);
+            })
+            .then(data => {
+                console.log("인증 성공 데이터:", data);
+                // data.result 구조가 맞는지 확인 (서버 응답 객체에 따라 수정)
+                const username = data.result?.username || "사용자";
+                document.getElementById('user-info').innerHTML =
+                    `✅ 서버 인증 완료: <strong>${username}</strong>님 접속 중`;
+
+                // 성공 시에만 주소창을 정리합니다.
+                window.history.replaceState({}, document.title, "/success.html");
+            })
+            .catch(error => {
+                console.error("Fetch 에러:", error);
+                document.getElementById('user-info').innerHTML =
+                    `<span style="color:red;">❌ 인증 실패: ${error.message}</span>`;
+            });
+    };
+</script>
+</body>
+</html>

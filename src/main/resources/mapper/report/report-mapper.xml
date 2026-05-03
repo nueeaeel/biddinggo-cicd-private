@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.report.mapper.ReportMapper">
+
+    <insert id="insertReport" parameterType="Report" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO report (
+            reporter_id,
+            target_id,
+            target_type,
+            reason,
+            created_at
+        ) VALUES (
+                     #{reporterId},
+                     #{targetId},
+                     #{targetType},
+                     #{reason},
+                     NOW()
+                 )
+    </insert>
+
+    <select id="countByTargetMemberId" resultType="int">
+        SELECT COUNT(*)
+        FROM report
+        WHERE target_id = #{targetMemberId}
+    </select>
+
+    <select id="existsByReporterIdAndTargetId" resultType="boolean">
+        SELECT IF(COUNT(*) > 0, 1, 0)
+        FROM report
+        WHERE reporter_id = #{reporterId}
+          AND target_id = #{targetId}
+          AND target_type = #{targetType}
+    </select>
+
+
+</mapper>

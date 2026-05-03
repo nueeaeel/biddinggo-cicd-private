@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiddingGo Login Test</title>
+    <style>
+        body { font-family: 'Pretendard', sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background-color: #f5f6f7; margin: 0; }
+        .login-container { background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); text-align: center; width: 320px; }
+        h2 { margin-bottom: 30px; color: #333; }
+        .btn { display: flex; align-items: center; justify-content: center; padding: 12px; margin-bottom: 12px; border-radius: 6px; text-decoration: none; font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
+        .btn:hover { opacity: 0.85; }
+        .btn-google { background-color: #ffffff; color: #757575; border: 1px solid #ddd; }
+        .btn-kakao { background-color: #FEE500; color: #191919; }
+        .logo { width: 20px; margin-right: 10px; }
+    </style>
+</head>
+<body>
+<div class="login-container">
+    <h2>BiddingGo</h2>
+    <a href="/oauth2/authorization/google" class="btn btn-google">
+        <img src="https://developers.google.com/static/identity/images/g-logo.png" class="logo">
+        구글로 시작하기
+    </a>
+    <a href="/oauth2/authorization/kakao" class="btn btn-kakao">
+        <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" class="logo">
+        카카오로 시작하기
+    </a>
+</div>
+</body>
+</html>

@@ -1,0 +1,2 @@
+ALTER TABLE direct_inquiry
+    MODIFY COLUMN category VARCHAR(20) NOT NULL;

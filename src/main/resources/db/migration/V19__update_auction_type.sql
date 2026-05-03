@@ -1,0 +1,10 @@
+ALTER TABLE auction
+MODIFY COLUMN `type` VARCHAR(20) NOT NULL DEFAULT 'NORMAL';
+
+UPDATE auction
+SET type = 'NORMAL'
+WHERE type = 'INSPECTION';
+
+ALTER TABLE auction
+ADD CONSTRAINT chk_auction_type
+CHECK (`type` IN ('NORMAL', 'TIME_DEAL'));

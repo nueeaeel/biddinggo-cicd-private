@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.payment.mapper.PaymentMapper">
+
+    <insert id="insert" parameterType="Payment" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO payment(
+            member_id,
+            order_id,
+            payment_key,
+            payment_method,
+            amount,
+            status,
+            approved_at,
+            created_at
+        ) VALUES (
+            #{memberId},
+            #{orderId},
+            #{paymentKey},
+            #{paymentMethod},
+            #{amount},
+            #{status},
+            #{approvedAt},
+            #{createdAt}
+        )
+    </insert>
+
+    <select id="existsByOrderId" parameterType="string" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1
+            FROM payment
+            WHERE order_id = #{orderId}
+        )
+    </select>
+
+    <!-- 가상계좌 조회 쿼리 -->
+    <resultMap id="virtualAccountResponseMap" type="GetVirtualAccountResponse">
+        <result property="status" column="status"/>
+        <result property="orderId" column="order_id"/>
+        <result property="amount" column="amount"/>
+        <result property="bankCode" column="bank_code"/>
+        <result property="bankAccount" column="bank_account"/>
+        <result property="accountHolderName" column="account_holder_name"/>
+        <result property="dueDate" column="due_date"/>
+    </resultMap>
+    <select id="findByMemberId" parameterType="map" resultMap="virtualAccountResponseMap">
+        SELECT
+            v.bank_code,
+            p.order_id,
+            v.bank_account,
+            v.account_holder_name,
+            v.due_date,
+            p.amount,
+            p.status
+        FROM
+            payment p
+                JOIN virtual_account v
+                     ON
+                         p.id = v.payment_id
+        WHERE
+            p.member_id = #{memberId}
+          AND p.status = #{status}
+          AND v.due_date > NOW()
+        ORDER BY
+            p.created_at DESC
+            LIMIT 3;
+    </select>
+
+    <!-- 멱등성 검사 후 결제 업데이트 -->
+    <update id="completeIfWaiting" parameterType="map">
+        UPDATE
+            payment p
+        SET
+            p.status = #{status},
+            p.approved_at = #{approvedAt}
+        WHERE
+            p.order_id = #{orderId}
+          AND p.status = 'WAITING_FOR_DEPOSIT'
+    </update>
+
+    <!-- -->
+    <select id="findPaymentInfoByOrderId" parameterType="string">
+        SELECT
+            id AS paymentId,
+            member_id AS memberId,
+            amount
+        FROM
+            payment
+        WHERE
+            order_id = #{orderId};
+    </select>
+
+</mapper>
+

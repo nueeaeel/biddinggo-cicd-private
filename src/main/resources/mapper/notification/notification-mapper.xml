@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.biddingmate.biddinggo.notification.mapper.NotificationMapper">
+
+    <insert id="insert" parameterType="Notification" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO notification(
+            receiver_id,
+            type,
+            content,
+            <if test="url != null">url,</if>
+            created_at
+        ) VALUES (
+                     #{receiverId},
+                     #{type},
+                     #{content},
+                     <if test="url != null">#{url},</if>
+                     #{createdAt}
+                 )
+    </insert>
+
+
+    <select id="getNotificationsByMemberId"
+            resultType="com.biddingmate.biddinggo.notification.dto.NotificationResponse">
+        SELECT id,
+        type,
+        content,
+        url,
+        read_at AS readAt,
+        created_at AS createdAt
+        FROM notification
+        WHERE receiver_id = #{receiverId}
+        <choose>
+            <when test="order == 'ASC'">ORDER BY created_at ASC</when>
+            <otherwise>ORDER BY created_at DESC</otherwise>
+        </choose>
+    </select>
+
+    <select id="getNotificationCount">
+        SELECT COUNT(*)
+        FROM notification
+        WHERE receiver_id = #{receiverId}
+    </select>
+
+    <select id="countUnreadByReceiverId" resultType="_int">
+        SELECT COUNT(*)
+        FROM notification
+        WHERE receiver_id = #{receiverId}
+          AND read_at IS NULL
+    </select>
+
+    <update id="updateReadAtByMemberId">
+        UPDATE notification
+        SET read_at = NOW()
+        WHERE receiver_id = #{receiverId}
+          AND ISNULL(read_at)
+    </update>
+
+    <update id="updateReadAtById">
+        UPDATE notification
+        SET read_at = NOW()
+        WHERE id = #{id}
+          AND receiver_id = #{receiverId}
+    </update>
+
+    <delete id="deleteAdminNoticeNotificationsByNoticeId">
+        DELETE FROM notification
+        WHERE type = 'ADMIN_NOTICE'
+          AND url = CONCAT('/notices/', #{noticeId})
+    </delete>
+
+
+
+</mapper>

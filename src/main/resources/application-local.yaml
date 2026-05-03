@@ -1,0 +1,107 @@
+server:
+  port: ${LOCAL_PORT}
+
+spring:
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    url: jdbc:mariadb://${DB_HOST}:${DB_PORT}/${DB_NAME}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      username: ${REDIS_USERNAME}
+      password: ${REDIS_PASSWORD}
+      port: ${REDIS_PORT:6379}
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+    encoding: UTF-8
+    clean-disabled: true
+
+  security:
+    oauth2:
+      client:
+        registration:
+          kakao:
+            client-authentication-method: client_secret_post
+            client-name: kakao
+            client-id: ${KAKAO_REST_API_KEY}
+            client-secret: ${KAKAO_CLIENT_SECRET}
+            redirect-uri: ${BACKEND_KAKAO_REDIRECT_URI:http://localhost:8080/login/oauth2/code/kakao}
+            authorization-grant-type: authorization_code
+            scope:
+              - profile_nickname
+              - account_email
+          google:
+            client-id: ${GOOGLE_CLIENT_ID}
+            client-secret: ${GOOGLE_CLIENT_SECRET}
+            redirect-uri: ${BACKEND_GOOGLE_REDIRECT_URI:http://localhost:8080/login/oauth2/code/google}
+            authorization-grant-type: authorization_code
+            scope:
+              - profile
+              - email
+        provider:
+          kakao:
+            authorization-uri: https://kauth.kakao.com/oauth/authorize
+            token-uri: https://kauth.kakao.com/oauth/token
+            user-info-uri: https://kapi.kakao.com/v2/user/me
+            user-name-attribute: id
+
+
+mybatis:
+  mapper-locations: classpath:mapper/**/*.xml
+  type-aliases-package: com.biddingmate.biddinggo
+  configuration:
+    map-underscore-to-camel-case: true
+
+tosspayments:
+  secret-key: ${TOSS_SECRET_KEY}
+
+cloudflare:
+  r2:
+    access-key: ${R2_ACCESS_KEY}
+    secret-key: ${R2_SECRET_KEY}
+    account-id: ${R2_ACCOUNT_ID}
+    bucket: ${R2_BUCKET}
+    public-base-url: ${R2_PUBLIC_BASE_URL}
+    region: ${R2_REGION:auto}
+    presigned-url-duration-minutes: ${R2_PRESIGNED_URL_DURATION_MINUTES:10}
+
+jwt:
+  issuer: bidding-mate
+  secret: ${JWT_SECRET_KEY}
+
+auction:
+  prediction:
+    price:
+      min-reference-count: ${AUCTION_PREDICTION_MIN_REFERENCE_COUNT:1}
+      top-k: ${AUCTION_PREDICTION_TOP_K:20}
+      min-similarity: ${AUCTION_PREDICTION_MIN_SIMILARITY:0.55}
+      condition-score-tolerance: ${AUCTION_PREDICTION_CONDITION_SCORE_TOLERANCE:0.20}
+      outlier-multiplier: ${AUCTION_PREDICTION_OUTLIER_MULTIPLIER:1.5}
+      min-weight: ${AUCTION_PREDICTION_MIN_WEIGHT:0.000001}
+    embedding:
+      enabled: ${OPENAI_EMBEDDING_ENABLED:false}
+      base-url: ${OPENAI_BASE_URL:https://api.openai.com/v1}
+      api-key: ${OPENAI_API_KEY}
+      model: ${OPENAI_EMBEDDING_MODEL:text-embedding-3-small}
+      dimensions: ${OPENAI_EMBEDDING_DIMENSIONS:1536}
+      timeout-millis: ${OPENAI_TIMEOUT_MILLIS:5000}
+    supabase:
+      enabled: ${SUPABASE_ENABLED:false}
+      url: ${SUPABASE_URL}
+      service-role-key: ${SUPABASE_SERVICE_ROLE_KEY}
+      schema: ${SUPABASE_SCHEMA:public}
+      timeout-millis: ${SUPABASE_TIMEOUT_MILLIS:5000}
+
+springdoc:
+  swagger-ui:
+    tags-sorter: alpha
+    operations-sorter: alpha
+
+app:
+  frontend:
+    redirect-uri: ${FRONTEND_REDIRECT_URI:http://localhost:5173/auth/callback}

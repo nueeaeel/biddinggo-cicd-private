@@ -1,0 +1,41 @@
+spring:
+  application:
+    name: bidding-go
+  config:
+    import: optional:file:.env[.properties]
+logging:
+  level:
+    '[org.springframework.web]': info
+    '[org.springframework.security]': info
+    '[org.mybatis]': debug
+    '[org.mariadb.jdbc.client.impl]': info
+    '[org.springframework.data.redis]': info
+    '[io.lettuce.core]': info
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: prometheus,health,info,metrics
+
+  endpoint:
+    prometheus:
+      enabled: true
+    health:
+      show-details: always
+
+  metrics:
+    tags:
+      application: biddinggo
+
+    enable:
+      jvm: true
+      system: true
+      process: true
+      hikaricp: true
+
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true
+      percentiles:
+        http.server.requests: 0.5, 0.9, 0.95, 0.99
