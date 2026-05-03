@@ -31,7 +31,6 @@ pipeline {
 
     environment {
         DOCKER_IMAGE_NAME = 'biddinggo-service'
-        DOCKER_IMAGE_VERSION = 'latest'
     }
 
     stages {
@@ -50,14 +49,15 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                def buildNumber = "${env.BUILD_NUMBER}"
-
                 container('docker') {
-                    withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
-                        sh 'docker -v'
-                        sh 'echo $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                        sh 'docker build --no-cache -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION .'
-                        sh 'docker image inspect $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                    script {
+                        def buildNumber = "${env.BUILD_NUMBER}"
+                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
+                            sh 'docker -v'
+                            sh 'echo $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                            sh 'docker build --no-cache -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION .'
+                            sh 'docker image inspect $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                        }
                     }
                 }
             }
