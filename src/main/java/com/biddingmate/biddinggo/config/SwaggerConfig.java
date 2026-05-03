@@ -6,8 +6,11 @@ import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.security.SecurityRequirement;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import io.swagger.v3.oas.models.servers.Server;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
 
 @Configuration
 @OpenAPIDefinition(
@@ -21,6 +24,12 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
+                .servers(
+                        List.of(
+                                new Server().url("http://api.bidding-go.com:30080"),
+                                new Server().url("https://api.bidding-go.com:30443")
+                        )
+                )
                 .components(
                         new Components().addSecuritySchemes(
                                 // 보안 스키마의 이름
