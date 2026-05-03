@@ -32,8 +32,8 @@ pipeline {
     environment {
         DOCKER_IMAGE_NAME = 'biddinggo-service'
         GHCR_REGISTRY = 'ghcr.io'
-        GHCR_OWNER = 'biddingmate'
-        GHCR_IMAGE_NAME = 'ghcr.io/biddingmate/biddinggo-service'
+        GHCR_OWNER = 'nueeaeel'
+        GHCR_IMAGE_NAME = "${GHCR_REGISTRY}/${GHCR_OWNER}/${DOCKER_IMAGE_NAME}"
     }
 
     stages {
