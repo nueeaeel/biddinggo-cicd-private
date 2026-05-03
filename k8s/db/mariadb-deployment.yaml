@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: mariadb
-        image: mariadb:latest
+        image: mariadb:11.8.5
         resources:
           requests:
             memory: "512Mi"
@@ -29,6 +29,12 @@ spec:
             secretKeyRef:
               name: mariadb-secret
               key: ROOT_PASSWORD
+        - name: MARIADB_DATABASE
+          value: "biddinggo"
+        - name: MARIADB_USER
+          value: "biddinggo"
+        - name: MARIADB_PASSWORD
+          value: "biddinggo"
         ports:
         - containerPort: 3306
         volumeMounts:
@@ -37,4 +43,4 @@ spec:
       volumes: 
       - name: mariadb-volume
         persistentVolumeClaim:
-          claimName: mariadb-pvc
+          claimName: mariadb-biddinggo-pvc

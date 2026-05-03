@@ -11,5 +11,5 @@ spec:
   storageClassName: manual
   persistentVolumeReclaimPolicy: Delete
   hostPath:
-    path: /run/desktop/mnt/host/c/Users/Playdata/biddinggo-mariadb
+    path: /run/desktop/mnt/host/c/Users/Playdata/mariadb-biddinggo
 

@@ -1,7 +1,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: mariadb-pvc
+  name: mariadb-biddinggo-pvc
   namespace: biddinggo
 spec:
   resources:
