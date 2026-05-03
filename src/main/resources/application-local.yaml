@@ -15,7 +15,7 @@ spring:
       port: ${REDIS_PORT:6379}
 
   flyway:
-    enabled: true
+    enabled: false
     locations: classpath:db/migration
     baseline-on-migrate: true
     encoding: UTF-8
