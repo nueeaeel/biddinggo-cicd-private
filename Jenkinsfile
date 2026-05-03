@@ -29,13 +29,37 @@ pipeline {
         }
     }
 
-    // environment {
-    // }
+    environment {
+        DOCKER_IMAGE_NAME = 'biddinggo-service'
+        DOCKER_IMAGE_VERSION = 'latest'
+    }
 
     stages {
-        stage('Hello') {
+        stage('Gradle Build') {
             steps {
-                echo 'Hello World'
+                container('gradle') {
+                    sh 'pwd'
+                    sh 'ls -al'
+                    sh './gradlew -v'
+                    sh './gradlew clean build'
+                    sh 'ls -al'
+                    sh 'ls -al ./build/libs'
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                def buildNumber = "${env.BUILD_NUMBER}"
+
+                container('docker') {
+                    withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
+                        sh 'docker -v'
+                        sh 'echo $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                        sh 'docker build --no-cache -t $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION .'
+                        sh 'docker image inspect $DOCKER_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                    }
+                }
             }
         }
     }
