@@ -29,8 +29,8 @@ pipeline {
         }
     }
 
-    environment {
-    }
+    // environment {
+    // }
 
     stages {
         stage('Hello') {
