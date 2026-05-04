@@ -21,6 +21,11 @@ pipeline {
                 volumeMounts:
                 - mountPath: "/var/run/docker.sock"
                   name: docker-socket
+              - name: git
+                image: alpine/git:2.45.2
+                command:
+                - cat
+                tty: true
               volumes:
               - name: docker-socket
                 hostPath:
@@ -38,7 +43,24 @@ pipeline {
     }
 
     stages {
+        stage('Check CI Skip') {
+            steps {
+                container('git') {
+                    script {
+                        def skipStatus = sh(script: 'git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
+                        env.SKIP_PIPELINE = skipStatus == 0 ? 'true' : 'false'
+                        if (env.SKIP_PIPELINE == 'true') {
+                            echo 'Skipping build because the latest commit contains [skip ci].'
+                        }
+                    }
+                }
+            }
+        }
+
         stage('Gradle Build') {
+            when {
+                expression { env.SKIP_PIPELINE != 'true' }
+            }
             steps {
                 container('gradle') {
                     sh 'pwd'
@@ -53,6 +75,9 @@ pipeline {
         }
 
         stage('Docker Build') {
+            when {
+                expression { env.SKIP_PIPELINE != 'true' }
+            }
             steps {
                 container('docker') {
                     script {
@@ -70,6 +95,9 @@ pipeline {
         }
 
         stage('Push to GHCR') {
+            when {
+                expression { env.SKIP_PIPELINE != 'true' }
+            }
             steps {
                 container('docker') {
                     script {
@@ -80,6 +108,31 @@ pipeline {
                                 sh 'docker push $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
                                 sh 'docker push $GHCR_IMAGE_NAME:latest'
                                 sh 'docker logout $GHCR_REGISTRY'
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update Deployment Image') {
+            when {
+                expression { env.SKIP_PIPELINE != 'true' }
+            }
+            steps {
+                container('git') {
+                    script {
+                        def buildNumber = "${env.BUILD_NUMBER}"
+                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
+                            withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
+                                sh 'git config user.name "jenkins-bot"'
+                                sh 'git config user.email "jenkins-bot@users.noreply.github.com"'
+                                sh 'sed -i "s|image: $GHCR_IMAGE_NAME:.*|image: $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION|" infra/k8s/deployment.yaml'
+                                sh 'git diff -- infra/k8s/deployment.yaml'
+                                sh 'git add infra/k8s/deployment.yaml'
+                                sh 'git commit -m "ci: update deployment image to $DOCKER_IMAGE_VERSION [skip ci]"'
+                                sh 'git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/nueeaeel/biddinggo-cicd-private.git'
+                                sh 'git push origin HEAD:main'
                             }
                         }
                     }
