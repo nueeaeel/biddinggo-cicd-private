@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: biddinggo-api
-        image: ghcr.io/nueeaeel/biddinggo-service:latest
+        image: ghcr.io/nueeaeel/biddinggo-service:21
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "local"
