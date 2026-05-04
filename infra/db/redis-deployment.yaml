@@ -16,6 +16,16 @@ spec:
       containers:
       - name: redis
         image: redis:7.4
+        command:
+        - sh
+        - -c
+        - redis-server --requirepass "$REDIS_PASSWORD"
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: biddinggo-env-secret
+              key: REDIS_PASSWORD
         resources:
           requests:
             memory: "256Mi"

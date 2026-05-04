@@ -16,61 +16,20 @@ spec:
       containers:
       - name: biddinggo-api
         image: ghcr.io/nueeaeel/biddinggo-service:27
+        envFrom:
+        - secretRef:
+            name: biddinggo-env-secret
         env:
         - name: SPRING_PROFILES_ACTIVE
           value: "local"
-        - name: LOCAL_PORT
-          value: "8080"
         - name: DB_HOST
           value: "mariadb-service"
-        - name: DB_PORT
-          value: "3306"
-        - name: DB_NAME
-          value: "biddinggo"
-        - name: DB_USERNAME
-          value: "biddinggo"
-        - name: DB_PASSWORD
-          value: "biddinggo"
         - name: REDIS_HOST
           value: "redis-service"
-        - name: REDIS_PORT
-          value: "6379"
-        - name: REDIS_USERNAME
-          value: ""
-        - name: REDIS_PASSWORD
-          value: ""
-        - name: KAKAO_REST_API_KEY
-          value: "test"
-        - name: KAKAO_CLIENT_SECRET
-          value: "test"
-        - name: GOOGLE_CLIENT_ID
-          value: "test"
-        - name: GOOGLE_CLIENT_SECRET
-          value: "test"
-        - name: TOSS_SECRET_KEY
-          value: "test"
-        - name: R2_ACCESS_KEY
-          value: "test"
-        - name: R2_SECRET_KEY
-          value: "test"
-        - name: R2_ACCOUNT_ID
-          value: "test"
-        - name: R2_BUCKET
-          value: "test"
-        - name: R2_PUBLIC_BASE_URL
-          value: "https://example.com"
-        - name: JWT_SECRET_KEY
-          value: "test-jwt-secret-key-for-github-actions"
         - name: FRONTEND_URL
           value: "https://api.bidding-go.com:*,http://localhost:*,http://127.0.0.1:*"
         - name: FRONTEND_REDIRECT_URI
           value: "http://localhost:5173/auth/callback"
-        - name: OPENAI_API_KEY
-          value: "test"
-        - name: SUPABASE_URL
-          value: "https://example.supabase.co"
-        - name: SUPABASE_SERVICE_ROLE_KEY
-          value: "test"
         - name: OPENAPI_SERVER_URL
           value: "https://api.bidding-go.com"
         resources:
