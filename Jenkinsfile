@@ -43,11 +43,20 @@ pipeline {
     }
 
     stages {
+        stage('Checkout Source') {
+            steps {
+                container('git') {
+                    checkout scm
+                    sh 'git status --short'
+                }
+            }
+        }
+
         stage('Check CI Skip') {
             steps {
                 container('git') {
                     script {
-                        def skipStatus = sh(script: 'git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
+                        def skipStatus = sh(script: 'git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
                         env.SKIP_PIPELINE = skipStatus == 0 ? 'true' : 'false'
                         if (env.SKIP_PIPELINE == 'true') {
                             echo 'Skipping build because the latest commit contains [skip ci].'
@@ -127,6 +136,8 @@ pipeline {
                             withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
                                 sh 'git config user.name "jenkins-bot"'
                                 sh 'git config user.email "jenkins-bot@users.noreply.github.com"'
+                                sh 'git checkout main'
+                                sh 'git pull --rebase origin main'
                                 sh 'sed -i "s|image: $GHCR_IMAGE_NAME:.*|image: $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION|" infra/k8s/deployment.yaml'
                                 sh 'git diff -- infra/k8s/deployment.yaml'
                                 sh 'git add infra/k8s/deployment.yaml'
