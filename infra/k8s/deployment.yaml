@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: biddinggo-api
-        image: ghcr.io/nueeaeel/biddinggo-service:33
+        image: ghcr.io/nueeaeel/biddinggo-service:35
         envFrom:
         - secretRef:
             name: biddinggo-env-secret
