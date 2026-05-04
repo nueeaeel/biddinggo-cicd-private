@@ -67,22 +67,22 @@ pipeline {
             }
         }
 
-        stage('Gradle Build') {
-            when {
-                expression { env.SKIP_PIPELINE != 'true' }
-            }
-            steps {
-                container('gradle') {
-                    sh 'pwd'
-                    sh 'ls -al'
-                    sh 'chmod +x ./gradlew'
-                    sh './gradlew -v'
-                    sh './gradlew clean build -x test'
-                    sh 'ls -al'
-                    sh 'ls -al ./build/libs'
-                }
-            }
-        }
+        // stage('Gradle Build') {
+        //     when {
+        //         expression { env.SKIP_PIPELINE != 'true' }
+        //     }
+        //     steps {
+        //         container('gradle') {
+        //             sh 'pwd'
+        //             sh 'ls -al'
+        //             sh 'chmod +x ./gradlew'
+        //             sh './gradlew -v'
+        //             sh './gradlew clean build -x test'
+        //             sh 'ls -al'
+        //             sh 'ls -al ./build/libs'
+        //         }
+        //     }
+        // }
 
         stage('Docker Build') {
             when {
