@@ -47,6 +47,7 @@ pipeline {
             steps {
                 container('git') {
                     checkout scm
+                    sh 'git config --global --add safe.directory "$WORKSPACE"'
                     sh 'git status --short'
                 }
             }
@@ -134,6 +135,7 @@ pipeline {
                         def buildNumber = "${env.BUILD_NUMBER}"
                         withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
                             withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
+                                sh 'git config --global --add safe.directory "$WORKSPACE"'
                                 sh 'git config user.name "jenkins-bot"'
                                 sh 'git config user.email "jenkins-bot@users.noreply.github.com"'
                                 sh 'git checkout main'
