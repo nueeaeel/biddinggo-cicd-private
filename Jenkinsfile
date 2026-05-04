@@ -159,60 +159,60 @@ pipeline {
             script {
                 if (env.SKIP_PIPELINE == 'true') {
                     echo """
-                        ============================================================
-                        ⏭️  CI skipped
-                        ============================================================
+============================================================
+  ⏭️  CI skipped
+============================================================
 
-                        🧭 Build
-                            Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
-                            Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
 
-                        📝 Reason
-                            Message    : latest commit contains [skip ci]
+  📝 Reason
+    Message    : latest commit contains [skip ci]
 
-                        ============================================================
-                        """
+============================================================
+"""
                 } else {
                     echo """
-                        ============================================================
-                        ✅ BiddingGo deployment pipeline succeeded
-                        ============================================================
+============================================================
+  ✅ BiddingGo deployment pipeline succeeded
+============================================================
 
-                        🧭 Build
-                            Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
-                            Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
 
-                        🐳 Image
-                            Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
-                            Latest     : ${env.GHCR_IMAGE_NAME}:latest
+  🐳 Image
+    Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
 
-                        📦 GitOps
-                            Manifest   : infra/k8s/deployment.yaml
-                            Commit     : ci: update deployment image to ${env.BUILD_NUMBER} [skip ci]
+  📦 GitOps
+    Manifest   : infra/k8s/deployment.yaml
+    Commit     : ci: update deployment image to ${env.BUILD_NUMBER} [skip ci]
 
-                        ============================================================
-                        """
+
+============================================================
+"""
                 }
             }
         }
         failure {
             echo """
-                ============================================================
-                ❌ BiddingGo deployment pipeline failed
-                ============================================================
+============================================================
+  ❌ BiddingGo deployment pipeline failed
+============================================================
 
-                🧭 Build
-                    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
-                    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
 
-                🐳 Image
-                    Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
+  🐳 Image
+    Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
 
-                🔎 Debug
-                    Console    : ${env.BUILD_URL}console
+  🔎 Debug
+    Console    : ${env.BUILD_URL}console
 
-                ============================================================
-                """
+============================================================
+"""
         }
     }
 }
