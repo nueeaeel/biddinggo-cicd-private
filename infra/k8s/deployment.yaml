@@ -30,6 +30,10 @@ spec:
           value: "https://api.bidding-go.com:*,http://localhost:*,http://127.0.0.1:*"
         - name: FRONTEND_REDIRECT_URI
           value: "http://localhost:5173/auth/callback"
+        - name: BACKEND_GOOGLE_REDIRECT_URI
+          value: "https://api.bidding-go.com:30443/login/oauth2/code/google"
+        - name: BACKEND_KAKAO_REDIRECT_URI
+          value: "https://api.bidding-go.com:30443/login/oauth2/code/kakao"
         - name: OPENAPI_SERVER_URL
           value: "https://api.bidding-go.com"
         resources:
