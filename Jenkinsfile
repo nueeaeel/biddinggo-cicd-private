@@ -138,13 +138,13 @@ pipeline {
                                 sh 'git config --global --add safe.directory "$WORKSPACE"'
                                 sh 'git config user.name "jenkins-bot"'
                                 sh 'git config user.email "jenkins-bot@users.noreply.github.com"'
+                                sh 'git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/nueeaeel/biddinggo-cicd-private.git'
                                 sh 'git fetch origin main'
                                 sh 'git checkout -B main origin/main'
                                 sh 'sed -i "s|image: $GHCR_IMAGE_NAME:.*|image: $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION|" infra/k8s/deployment.yaml'
                                 sh 'git diff -- infra/k8s/deployment.yaml'
                                 sh 'git add infra/k8s/deployment.yaml'
                                 sh 'git commit -m "ci: update deployment image to $DOCKER_IMAGE_VERSION [skip ci]"'
-                                sh 'git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/nueeaeel/biddinggo-cicd-private.git'
                                 sh 'git push origin HEAD:main'
                             }
                         }
