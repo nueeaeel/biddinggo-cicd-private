@@ -8,7 +8,9 @@ spec:
   source:
     repoURL: git@github.com:nueeaeel/biddinggo-cicd-private.git
     targetRevision: main
-    path: k8s
+    path: infra/k8s
+    directory:
+      recurse: true
   destination:
     server: https://kubernetes.default.svc
     namespace: biddinggo
