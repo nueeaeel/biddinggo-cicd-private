@@ -16,12 +16,12 @@ spec:
       containers:
       - name: biddinggo-api
 <<<<<<< HEAD
-        image: ghcr.io/nueeaeel/biddinggo-service:27
+        image: ghcr.io/nueeaeel/biddinggo-service:31
         envFrom:
         - secretRef:
             name: biddinggo-env-secret
 =======
-        image: ghcr.io/nueeaeel/biddinggo-service:29
+        image: ghcr.io/nueeaeel/biddinggo-service:31
 >>>>>>> 830f36f9d30d4f04c56d4d8e27de426bf7480504
         env:
         - name: SPRING_PROFILES_ACTIVE
