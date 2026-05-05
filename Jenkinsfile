@@ -45,15 +45,21 @@ pipeline {
     }
 
     stage('Detect Changed Areas') {
+      when {
+        expression { env.SKIP_PIPELINE != 'true' }
+      }
       steps {
         script {
-          def changedFiles = sh(script: '''
-            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
-              git diff --name-only HEAD^ HEAD
-            else
-              git show --name-only --pretty=format:'' HEAD
-            fi
-          ''', returnStdout: true).trim().split('\n').findAll { it }
+          def baseCommit = env.GIT_PREVIOUS_SUCCESSFUL_COMMIT ?: env.GIT_PREVIOUS_COMMIT
+          def changedText = ''
+
+          if (baseCommit?.trim() && sh(script: "git cat-file -e ${baseCommit}^{commit}", returnStatus: true) == 0) {
+            changedText = sh(script: "git diff --name-only ${baseCommit} HEAD", returnStdout: true).trim()
+          } else {
+            changedText = sh(script: "git show --name-only --pretty=format:'' HEAD", returnStdout: true).trim()
+          }
+
+          def changedFiles = changedText ? changedText.split('\n').findAll { it } : []
 
           env.FRONTEND_CHANGED = changedFiles.any { it.startsWith('frontend/') || it.startsWith('infra/k8s/frontend/') || it == 'infra/env/frontend.env' }.toString()
           env.BACKEND_CHANGED = changedFiles.any { it.startsWith('backend/') || it.startsWith('infra/k8s/backend/') }.toString()
@@ -66,6 +72,9 @@ pipeline {
     }
 
     stage('Trigger Jobs') {
+      when {
+        expression { env.SKIP_PIPELINE != 'true' }
+      }
       steps {
         script {
           if (env.FRONTEND_CHANGED == 'true') {
