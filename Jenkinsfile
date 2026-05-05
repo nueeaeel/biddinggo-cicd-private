@@ -55,7 +55,7 @@ pipeline {
             fi
           ''', returnStdout: true).trim().split('\n').findAll { it }
 
-          env.FRONTEND_CHANGED = changedFiles.any { it.startsWith('frontend/') || it.startsWith('infra/k8s/frontend/') }.toString()
+          env.FRONTEND_CHANGED = changedFiles.any { it.startsWith('frontend/') || it.startsWith('infra/k8s/frontend/') || it == 'infra/env/frontend.env' }.toString()
           env.BACKEND_CHANGED = changedFiles.any { it.startsWith('backend/') || it.startsWith('infra/k8s/backend/') }.toString()
 
           echo "Changed files:\n${changedFiles.join('\n')}"
