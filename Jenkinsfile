@@ -96,14 +96,57 @@ pipeline {
   }
 
   post {
-    always {
+    success {
       script {
-        if (env.FRONTEND_CHANGED == 'true' || env.BACKEND_CHANGED == 'true') {
-          echo 'Coordinator pipeline completed and child jobs were triggered as needed.'
+        if (env.SKIP_PIPELINE == 'true') {
+          echo """
+============================================================
+  ⏭️  CI skipped
+============================================================
+
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+
+  📝 Reason
+    Message    : ${env.SKIP_REASON ?: 'latest commit contains [skip ci]'}
+
+============================================================
+"""
         } else {
-          echo 'Coordinator pipeline completed with no relevant frontend/backend changes.'
+          echo """
+============================================================
+  ✅ BiddingGo coordinator pipeline succeeded
+============================================================
+
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+
+  🚦 Trigger
+    Frontend   : ${env.FRONTEND_CHANGED == 'true' ? env.FRONTEND_JOB : 'skipped'}
+    Backend    : ${env.BACKEND_CHANGED == 'true' ? env.BACKEND_JOB : 'skipped'}
+
+============================================================
+"""
         }
       }
+    }
+    failure {
+      echo """
+============================================================
+  ❌ BiddingGo coordinator pipeline failed
+============================================================
+
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+
+  🔎 Debug
+    Console    : ${env.BUILD_URL}console
+
+============================================================
+"""
     }
   }
 }

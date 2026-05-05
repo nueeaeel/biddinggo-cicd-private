@@ -56,6 +56,7 @@ pipeline {
                         def skipStatus = sh(script: 'git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
                         env.SKIP_PIPELINE = skipStatus == 0 ? 'true' : 'false'
                         if (env.SKIP_PIPELINE == 'true') {
+                            env.SKIP_REASON = 'latest commit contains [skip ci]'
                             echo 'Skipping build because the latest commit contains [skip ci].'
                         }
                     }
@@ -142,6 +143,67 @@ pipeline {
                     }
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            script {
+                if (env.SKIP_PIPELINE == 'true') {
+                    echo """
+============================================================
+  ⏭️  CI skipped
+============================================================
+
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+
+  📝 Reason
+    Message    : ${env.SKIP_REASON ?: 'latest commit contains [skip ci]'}
+
+============================================================
+"""
+                } else {
+                    echo """
+============================================================
+  ✅ BiddingGo frontend deployment pipeline succeeded
+============================================================
+
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+
+  🐳 Image
+    Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
+
+  📦 GitOps
+    Manifest   : ${env.DEPLOYMENT_MANIFEST}
+    Commit     : ci: update frontend image to ${env.BUILD_NUMBER} [skip ci]
+
+============================================================
+"""
+                }
+            }
+        }
+        failure {
+            echo """
+============================================================
+  ❌ BiddingGo frontend deployment pipeline failed
+============================================================
+
+  🧭 Build
+    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
+    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
+
+  🐳 Image
+    Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
+
+  🔎 Debug
+    Console    : ${env.BUILD_URL}console
+
+============================================================
+"""
         }
     }
 }

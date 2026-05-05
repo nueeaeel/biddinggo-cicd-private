@@ -149,14 +149,14 @@ pipeline {
     Duration   : ${currentBuild.durationString.replace(' and counting', '')}
 
   📝 Reason
-    Message    : ${env.SKIP_REASON ?: 'pipeline skipped'}
+    Message    : ${env.SKIP_REASON ?: 'latest commit contains [skip ci]'}
 
 ============================================================
 """
                 } else {
                     echo """
 ============================================================
-  ✅ BiddingGo deployment pipeline succeeded
+  ✅ BiddingGo backend deployment pipeline succeeded
 ============================================================
 
   🧭 Build
@@ -170,7 +170,6 @@ pipeline {
     Manifest   : ${env.DEPLOYMENT_MANIFEST}
     Commit     : ci: update backend image to ${env.BUILD_NUMBER} [skip ci]
 
-
 ============================================================
 """
                 }
@@ -179,7 +178,7 @@ pipeline {
         failure {
             echo """
 ============================================================
-  ❌ BiddingGo deployment pipeline failed
+  ❌ BiddingGo backend deployment pipeline failed
 ============================================================
 
   🧭 Build
