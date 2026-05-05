@@ -6,7 +6,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: biddinggo.beyond.com
+  - host: bidding-go.com
     http:
       paths:
       - pathType: Prefix
