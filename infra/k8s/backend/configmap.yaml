@@ -16,11 +16,11 @@ data:
   REDIS_PORT: "6379"
   REDIS_USERNAME: "default"
 
-  FRONTEND_URL: "http://localhost:*,http://127.0.0.1:*"
-  FRONTEND_REDIRECT_URI: "http://localhost:5173/auth/callback"
-  BACKEND_GOOGLE_REDIRECT_URI: "http://localhost:8080/login/oauth2/code/google"
-  BACKEND_KAKAO_REDIRECT_URI: "http://localhost:8080/login/oauth2/code/kakao"
-  OPENAPI_SERVER_URL: "http://localhost:8080"
+  FRONTEND_URL: "https://bidding-go.com:30443,https://api.bidding-go.com:30443,http://localhost:*,http://127.0.0.1:*"
+  FRONTEND_REDIRECT_URI: "https://bidding-go.com:30443/auth/callback"
+  BACKEND_GOOGLE_REDIRECT_URI: "https://api.bidding-go.com:30443/login/oauth2/code/google"
+  BACKEND_KAKAO_REDIRECT_URI: "https://api.bidding-go.com:30443/login/oauth2/code/kakao"
+  OPENAPI_SERVER_URL: "https://api.bidding-go.com:30443"
 
   AUCTION_PREDICTION_MIN_REFERENCE_COUNT: "1"
   AUCTION_PREDICTION_TOP_K: "20"
