@@ -1,196 +1,69 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml '''
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: jenkins-agent
-            spec:
-              containers:
-              - name: docker
-                image: docker:29.4.1-cli-alpine3.23
-                command:
-                - cat
-                tty: true
-                volumeMounts:
-                - mountPath: "/var/run/docker.sock"
-                  name: docker-socket
-              - name: git
-                image: alpine/git:2.45.2
-                command:
-                - cat
-                tty: true
-              volumes:
-              - name: docker-socket
-                hostPath:
-                  path: "/var/run/docker.sock"
-            '''
-        }
+  agent any
+
+  environment {
+    FRONTEND_JOB = 'biddinggo-frontend'
+    BACKEND_JOB = 'biddinggo-backend'
+  }
+
+  stages {
+    stage('Checkout Repository') {
+      steps {
+        checkout scm
+      }
     }
 
-    environment {
-        DOCKER_IMAGE_NAME = 'biddinggo-service'
-        GHCR_REGISTRY = 'ghcr.io'
-        GHCR_OWNER = 'nueeaeel'
-        GHCR_IMAGE_NAME = "${GHCR_REGISTRY}/${GHCR_OWNER}/${DOCKER_IMAGE_NAME}"
-        GITHUB_REPOSITORY_URL = 'https://github.com/nueeaeel/biddinggo-cicd-private'
+    stage('Detect Changed Areas') {
+      steps {
+        script {
+          def changedFiles = sh(script: '''
+            if git rev-parse --verify HEAD^ >/dev/null 2>&1; then
+              git diff --name-only HEAD^ HEAD
+            else
+              git show --name-only --pretty=format:'' HEAD
+            fi
+          ''', returnStdout: true).trim().split('\n').findAll { it }
+
+          env.FRONTEND_CHANGED = changedFiles.any { it.startsWith('frontend/') || it.startsWith('infra/k8s/frontend/') }.toString()
+          env.BACKEND_CHANGED = changedFiles.any { it.startsWith('backend/') || it.startsWith('infra/k8s/backend/') }.toString()
+
+          echo "Changed files:\n${changedFiles.join('\n')}"
+          echo "Frontend changed: ${env.FRONTEND_CHANGED}"
+          echo "Backend changed: ${env.BACKEND_CHANGED}"
+        }
+      }
     }
 
-    stages {
-        stage('Checkout Source') {
-            steps {
-                container('git') {
-                    checkout scm
-                    sh 'git config --global --add safe.directory "$WORKSPACE"'
-                    sh 'git status --short'
-                }
-            }
-        }
+    stage('Trigger Jobs') {
+      steps {
+        script {
+          if (env.FRONTEND_CHANGED == 'true') {
+            echo "Triggering frontend job: ${env.FRONTEND_JOB}"
+            build job: env.FRONTEND_JOB, wait: false
+          }
 
-        stage('Check CI Skip') {
-            steps {
-                container('git') {
-                    script {
-                        def skipStatus = sh(script: 'git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
-                        env.SKIP_PIPELINE = skipStatus == 0 ? 'true' : 'false'
-                        if (env.SKIP_PIPELINE == 'true') {
-                            echo 'Skipping build because the latest commit contains [skip ci].'
-                        }
-                    }
-                }
-            }
-        }
+          if (env.BACKEND_CHANGED == 'true') {
+            echo "Triggering backend job: ${env.BACKEND_JOB}"
+            build job: env.BACKEND_JOB, wait: false
+          }
 
-        stage('Docker Build') {
-            when {
-                expression { env.SKIP_PIPELINE != 'true' }
-            }
-            steps {
-                container('docker') {
-                    script {
-                        def buildNumber = "${env.BUILD_NUMBER}"
-                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
-                            sh 'docker -v'
-                            sh 'echo $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                            sh 'docker build --no-cache --label "org.opencontainers.image.source=$GITHUB_REPOSITORY_URL" -t $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION -t $GHCR_IMAGE_NAME:latest .'
-                            sh 'docker image inspect $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                            sh 'docker image inspect $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION --format "{{ index .Config.Labels \\"org.opencontainers.image.source\\" }}"'
-                        }
-                    }
-                }
-            }
+          if (env.FRONTEND_CHANGED != 'true' && env.BACKEND_CHANGED != 'true') {
+            echo 'No frontend/backend source changes detected. Nothing to trigger.'
+          }
         }
-
-        stage('Push to GHCR') {
-            when {
-                expression { env.SKIP_PIPELINE != 'true' }
-            }
-            steps {
-                container('docker') {
-                    script {
-                        def buildNumber = "${env.BUILD_NUMBER}"
-                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
-                            withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
-                                sh 'echo $GITHUB_TOKEN | docker login $GHCR_REGISTRY -u $GITHUB_USER --password-stdin'
-                                sh 'docker push $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                                sh 'docker push $GHCR_IMAGE_NAME:latest'
-                                sh 'docker logout $GHCR_REGISTRY'
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        stage('Update Deployment Image') {
-            when {
-                expression { env.SKIP_PIPELINE != 'true' }
-            }
-            steps {
-                container('git') {
-                    script {
-                        def buildNumber = "${env.BUILD_NUMBER}"
-                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
-                            withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
-                                sh 'git config --global --add safe.directory "$WORKSPACE"'
-                                sh 'git config user.name "jenkins-bot"'
-                                sh 'git config user.email "jenkins-bot@users.noreply.github.com"'
-                                sh 'git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/nueeaeel/biddinggo-cicd-private.git'
-                                sh 'git fetch origin main'
-                                sh 'git checkout -B main origin/main'
-                                sh 'sed -i "s|image: $GHCR_IMAGE_NAME:.*|image: $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION|" infra/k8s/deployment.yaml'
-                                sh 'git diff -- infra/k8s/deployment.yaml'
-                                sh 'git add infra/k8s/deployment.yaml'
-                                sh 'git commit -m "ci: update deployment image to $DOCKER_IMAGE_VERSION [skip ci]"'
-                                sh 'git push origin HEAD:main'
-                            }
-                        }
-                    }
-                }
-            }
-        }
+      }
     }
+  }
 
-    post {
-        success {
-            script {
-                if (env.SKIP_PIPELINE == 'true') {
-                    echo """
-============================================================
-  ⏭️  CI skipped
-============================================================
-
-  🧭 Build
-    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
-    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
-
-  📝 Reason
-    Message    : latest commit contains [skip ci]
-
-============================================================
-"""
-                } else {
-                    echo """
-============================================================
-  ✅ BiddingGo deployment pipeline succeeded
-============================================================
-
-  🧭 Build
-    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
-    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
-
-  🐳 Image
-    Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
-
-  📦 GitOps
-    Manifest   : infra/k8s/deployment.yaml
-    Commit     : ci: update deployment image to ${env.BUILD_NUMBER} [skip ci]
-
-
-============================================================
-"""
-                }
-            }
+  post {
+    always {
+      script {
+        if (env.FRONTEND_CHANGED == 'true' || env.BACKEND_CHANGED == 'true') {
+          echo 'Coordinator pipeline completed and child jobs were triggered as needed.'
+        } else {
+          echo 'Coordinator pipeline completed with no relevant frontend/backend changes.'
         }
-        failure {
-            echo """
-============================================================
-  ❌ BiddingGo deployment pipeline failed
-============================================================
-
-  🧭 Build
-    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
-    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
-
-  🐳 Image
-    Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
-
-  🔎 Debug
-    Console    : ${env.BUILD_URL}console
-
-============================================================
-"""
-        }
+      }
     }
+  }
 }

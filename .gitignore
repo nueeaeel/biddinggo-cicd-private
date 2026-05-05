@@ -38,8 +38,19 @@ out/
 
 ### env 파일 ###
 .env
+backend/.env
+backend/.env.*
+!backend/.env.example
+frontend/.env
+frontend/.env.*
+!frontend/.env.example
 
 AGENTS.md
 
 .gradle-user-home
 .DS_Store
+
+backend/build/
+backend/.gradle/
+frontend/dist/
+frontend/node_modules/

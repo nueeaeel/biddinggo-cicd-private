@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: biddinggo-web-deploy
+  namespace: biddinggo
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: biddinggo-web
+  template:
+    metadata:
+      labels:
+        app: biddinggo-web
+    spec:
+      containers:
+      - name: biddinggo-web
+        image: ghcr.io/nueeaeel/biddinggo-frontend:latest
+        envFrom:
+        - configMapRef:
+            name: biddinggo-frontend-config
+        resources:
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+          limits:
+            memory: "128Mi"
+            cpu: "200m"
+        ports:
+        - containerPort: 80
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 20
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 5
+          periodSeconds: 5
