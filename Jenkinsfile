@@ -42,6 +42,7 @@ pipeline {
           }
         }
       }
+    }
 
     stage('Detect Changed Areas') {
       steps {
