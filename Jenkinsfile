@@ -1,5 +1,21 @@
 pipeline {
-  agent any
+  agent {
+    kubernetes {
+      yaml '''
+      apiVersion: v1
+      kind: Pod
+      metadata:
+        name: jenkins-agent
+      spec:
+        containers:
+        - name: git
+          image: alpine/git:2.45.2
+          command:
+          - cat
+          tty: true
+      '''
+    }
+  }
 
   environment {
     FRONTEND_JOB = 'biddinggo-frontend'
@@ -12,6 +28,20 @@ pipeline {
         checkout scm
       }
     }
+
+    stage('Check CI Skip') {
+      steps {
+        container('git') {
+          script {
+            def skipStatus = sh(script: 'git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
+            env.SKIP_PIPELINE = skipStatus == 0 ? 'true' : 'false'
+            if (env.SKIP_PIPELINE == 'true') {
+                env.SKIP_REASON = 'latest commit contains [skip ci]'
+                echo 'Skipping build because the latest commit contains [skip ci].'
+            }
+          }
+        }
+      }
 
     stage('Detect Changed Areas') {
       steps {
