@@ -17,25 +17,10 @@ spec:
       - name: biddinggo-api
         image: ghcr.io/nueeaeel/biddinggo-service:43
         envFrom:
+        - configMapRef:
+            name: biddinggo-config
         - secretRef:
             name: biddinggo-env-secret
-        env:
-        - name: SPRING_PROFILES_ACTIVE
-          value: "local"
-        - name: DB_HOST
-          value: "mariadb-service"
-        - name: REDIS_HOST
-          value: "redis-service"
-        - name: FRONTEND_URL
-          value: "https://api.bidding-go.com:*,http://localhost:*,http://127.0.0.1:*"
-        - name: FRONTEND_REDIRECT_URI
-          value: "http://localhost:5173/auth/callback"
-        - name: BACKEND_GOOGLE_REDIRECT_URI
-          value: "https://api.bidding-go.com:30443/login/oauth2/code/google"
-        - name: BACKEND_KAKAO_REDIRECT_URI
-          value: "https://api.bidding-go.com:30443/login/oauth2/code/kakao"
-        - name: OPENAPI_SERVER_URL
-          value: "https://api.bidding-go.com"
         resources:
           requests:
             memory: "512Mi"

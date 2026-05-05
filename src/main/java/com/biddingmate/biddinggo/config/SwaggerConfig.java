@@ -26,8 +26,7 @@ public class SwaggerConfig {
         return new OpenAPI()
                 .servers(
                         List.of(
-                                new Server().url("http://api.bidding-go.com:30080"),
-                                new Server().url("https://api.bidding-go.com:30443")
+                                new Server().url("http://localhost:8080")
                         )
                 )
                 .components(

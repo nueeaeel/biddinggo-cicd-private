@@ -1,0 +1,40 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: biddinggo-config
+  namespace: biddinggo
+data:
+  SPRING_PROFILES_ACTIVE: "local"
+  LOCAL_PORT: "8080"
+
+  DB_HOST: "mariadb-service"
+  DB_PORT: "3306"
+  DB_NAME: "biddinggo"
+  DB_USERNAME: "biddinggo"
+
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+  REDIS_USERNAME: "default"
+
+  FRONTEND_URL: "http://localhost:*,http://127.0.0.1:*"
+  FRONTEND_REDIRECT_URI: "http://localhost:5173/auth/callback"
+  BACKEND_GOOGLE_REDIRECT_URI: "http://localhost:8080/login/oauth2/code/google"
+  BACKEND_KAKAO_REDIRECT_URI: "http://localhost:8080/login/oauth2/code/kakao"
+  OPENAPI_SERVER_URL: "http://localhost:8080"
+
+  AUCTION_PREDICTION_MIN_REFERENCE_COUNT: "1"
+  AUCTION_PREDICTION_TOP_K: "20"
+  AUCTION_PREDICTION_MIN_SIMILARITY: "0.55"
+  AUCTION_PREDICTION_CONDITION_SCORE_TOLERANCE: "0.20"
+  AUCTION_PREDICTION_OUTLIER_MULTIPLIER: "1.5"
+  AUCTION_PREDICTION_MIN_WEIGHT: "0.000001"
+
+  OPENAI_BASE_URL: "https://api.openai.com/v1"
+  OPENAI_EMBEDDING_ENABLED: "false"
+  OPENAI_EMBEDDING_MODEL: "text-embedding-3-small"
+  OPENAI_EMBEDDING_DIMENSIONS: "1536"
+  OPENAI_TIMEOUT_MILLIS: "5000"
+
+  SUPABASE_ENABLED: "false"
+  SUPABASE_SCHEMA: "public"
+  SUPABASE_TIMEOUT_MILLIS: "5000"
