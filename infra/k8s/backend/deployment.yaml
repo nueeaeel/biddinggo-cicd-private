@@ -4,7 +4,7 @@ metadata:
   name: biddinggo-api-deploy
   namespace: biddinggo
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: biddinggo-api
