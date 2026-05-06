@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: biddinggo-web
-        image: ghcr.io/nueeaeel/biddinggo-frontend:21
+        image: ghcr.io/nueeaeel/biddinggo-frontend:26
         resources:
           requests:
             memory: "64Mi"
