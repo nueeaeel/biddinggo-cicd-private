@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: biddinggo-api
-        image: ghcr.io/nueeaeel/biddinggo-backend:10
+        image: ghcr.io/nueeaeel/biddinggo-backend:12
         envFrom:
         - configMapRef:
             name: biddinggo-config
