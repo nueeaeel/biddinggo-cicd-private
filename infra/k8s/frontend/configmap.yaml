@@ -1,8 +1,0 @@
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: biddinggo-frontend-config
-  namespace: biddinggo
-data:
-  VITE_API_BASE_URL: "https://api.bidding-go.com:30443"
-  VITE_TOSS_CLIENT_KEY: "test_ck_4yKeq5bgrpPoPA0lxOkXrGX0lzW6"
