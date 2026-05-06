@@ -1,7 +1,6 @@
 spring:
   application:
     name: bidding-go
-  # CI trigger test: backend
   config:
     import: optional:file:.env[.properties]
 logging:
