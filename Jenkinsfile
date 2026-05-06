@@ -59,19 +59,27 @@ pipeline {
       }
       steps {
         script {
+          def buildBranches = [:]
+
           if (env.FRONTEND_CHANGED == 'true') {
-            echo "Triggering frontend job: ${env.FRONTEND_JOB}"
-            def frontendBuild = build job: env.FRONTEND_JOB, wait: true
-            env.FRONTEND_BUILD_NUMBER = frontendBuild.number.toString()
+            buildBranches['frontend'] = {
+              echo "Triggering frontend job: ${env.FRONTEND_JOB}"
+              def frontendBuild = build job: env.FRONTEND_JOB, wait: true
+              env.FRONTEND_BUILD_NUMBER = frontendBuild.number.toString()
+            }
           }
 
           if (env.BACKEND_CHANGED == 'true') {
-            echo "Triggering backend job: ${env.BACKEND_JOB}"
-            def backendBuild = build job: env.BACKEND_JOB, wait: true
-            env.BACKEND_BUILD_NUMBER = backendBuild.number.toString()
+            buildBranches['backend'] = {
+              echo "Triggering backend job: ${env.BACKEND_JOB}"
+              def backendBuild = build job: env.BACKEND_JOB, wait: true
+              env.BACKEND_BUILD_NUMBER = backendBuild.number.toString()
+            }
           }
 
-          if (env.FRONTEND_CHANGED != 'true' && env.BACKEND_CHANGED != 'true') {
+          if (buildBranches) {
+            parallel buildBranches
+          } else {
             echo 'No frontend/backend source changes detected. Nothing to trigger.'
           }
         }
