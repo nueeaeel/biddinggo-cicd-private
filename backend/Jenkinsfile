@@ -16,6 +16,11 @@ pipeline {
                 volumeMounts:
                 - mountPath: "/var/run/docker.sock"
                   name: docker-socket
+              - name: kubectl
+                image: bitnami/kubectl:1.31.3
+                command:
+                - cat
+                tty: true
               volumes:
               - name: docker-socket
                 hostPath:
@@ -30,9 +35,25 @@ pipeline {
         GHCR_OWNER = 'nueeaeel'
         GHCR_IMAGE_NAME = "${GHCR_REGISTRY}/${GHCR_OWNER}/${DOCKER_IMAGE_NAME}"
         GITHUB_REPOSITORY_URL = 'https://github.com/nueeaeel/biddinggo-cicd-private'
+        BACKEND_ENV_CREDENTIALS_ID = 'backend-env'
     }
 
     stages {
+        stage('Apply Backend Secret') {
+            steps {
+                container('kubectl') {
+                    withCredentials([file(credentialsId: env.BACKEND_ENV_CREDENTIALS_ID, variable: 'BACKEND_ENV_FILE')]) {
+                        sh '''
+                            kubectl create secret generic biddinggo-env-secret \
+                              --namespace biddinggo \
+                              --from-env-file="$BACKEND_ENV_FILE" \
+                              --dry-run=client -o yaml | kubectl apply -f -
+                        '''
+                    }
+                }
+            }
+        }
+
         stage('Docker Build') {
             steps {
                 container('docker') {
