@@ -16,11 +16,6 @@ pipeline {
                 volumeMounts:
                 - mountPath: "/var/run/docker.sock"
                   name: docker-socket
-              - name: git
-                image: alpine/git:2.45.2
-                command:
-                - cat
-                tty: true
               volumes:
               - name: docker-socket
                 hostPath:
@@ -35,30 +30,10 @@ pipeline {
         GHCR_OWNER = 'nueeaeel'
         GHCR_IMAGE_NAME = "${GHCR_REGISTRY}/${GHCR_OWNER}/${DOCKER_IMAGE_NAME}"
         GITHUB_REPOSITORY_URL = 'https://github.com/nueeaeel/biddinggo-cicd-private'
-        DEPLOYMENT_MANIFEST = 'infra/k8s/backend/deployment.yaml'
     }
 
     stages {
-
-        stage('Check CI Skip') {
-            steps {
-                container('git') {
-                    script {
-                        def skipStatus = sh(script: 'git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
-                        env.SKIP_PIPELINE = skipStatus == 0 ? 'true' : 'false'
-                        if (env.SKIP_PIPELINE == 'true') {
-                            env.SKIP_REASON = 'latest commit contains [skip ci]'
-                            echo 'Skipping build because the latest commit contains [skip ci].'
-                        }
-                    }
-                }
-            }
-        }
-
         stage('Docker Build') {
-            when {
-                expression { env.SKIP_PIPELINE != 'true' }
-            }
             steps {
                 container('docker') {
                     script {
@@ -76,9 +51,6 @@ pipeline {
         }
 
         stage('Push to GHCR') {
-            when {
-                expression { env.SKIP_PIPELINE != 'true' }
-            }
             steps {
                 container('docker') {
                     script {
@@ -95,90 +67,39 @@ pipeline {
                 }
             }
         }
-
-        stage('Update Deployment Image') {
-            when {
-                expression { env.SKIP_PIPELINE != 'true' }
-            }
-            steps {
-                container('git') {
-                    script {
-                        def buildNumber = "${env.BUILD_NUMBER}"
-                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
-                            withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
-                                sh 'git config user.name "jenkins-bot"'
-                                sh 'git config user.email "jenkins-bot@users.noreply.github.com"'
-                                sh 'git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/nueeaeel/biddinggo-cicd-private.git'
-                                sh 'git fetch origin main'
-                                sh 'git checkout -B main origin/main'
-                                sh 'sed -i "s|image: $GHCR_IMAGE_NAME:.*|image: $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION|" $DEPLOYMENT_MANIFEST'
-                                sh 'git diff -- $DEPLOYMENT_MANIFEST'
-                                sh 'git add $DEPLOYMENT_MANIFEST'
-                                sh 'git commit -m "ci: update backend image to $DOCKER_IMAGE_VERSION [skip ci]"'
-                                sh 'git pull --rebase origin main'
-                                sh 'git push origin HEAD:main'
-                            }
-                        }
-                    }
-                }
-            }
-        }
     }
 
     post {
         success {
-            script {
-                if (env.SKIP_PIPELINE == 'true') {
-                    echo """
+            echo """
 ============================================================
-  ⏭️  CI skipped
+  BiddingGo backend image pipeline succeeded
 ============================================================
 
-  🧭 Build
+  Build
     Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
     Duration   : ${currentBuild.durationString.replace(' and counting', '')}
 
-  📝 Reason
-    Message    : ${env.SKIP_REASON ?: 'latest commit contains [skip ci]'}
-
-============================================================
-"""
-                } else {
-                    echo """
-============================================================
-  ✅ BiddingGo backend deployment pipeline succeeded
-============================================================
-
-  🧭 Build
-    Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
-    Duration   : ${currentBuild.durationString.replace(' and counting', '')}
-
-  🐳 Image
+  Image
     Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
 
-  📦 GitOps
-    Manifest   : ${env.DEPLOYMENT_MANIFEST}
-    Commit     : ci: update backend image to ${env.BUILD_NUMBER} [skip ci]
-
 ============================================================
 """
-                }
-            }
         }
         failure {
             echo """
 ============================================================
-  ❌ BiddingGo backend deployment pipeline failed
+  BiddingGo backend image pipeline failed
 ============================================================
 
-  🧭 Build
+  Build
     Job        : ${env.JOB_NAME} #${env.BUILD_NUMBER}
     Duration   : ${currentBuild.durationString.replace(' and counting', '')}
 
-  🐳 Image
+  Image
     Version    : ${env.GHCR_IMAGE_NAME}:${env.BUILD_NUMBER}
 
-  🔎 Debug
+  Debug
     Console    : ${env.BUILD_URL}console
 
 ============================================================
