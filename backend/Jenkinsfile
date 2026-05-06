@@ -17,7 +17,7 @@ pipeline {
                 - mountPath: "/var/run/docker.sock"
                   name: docker-socket
               - name: kubectl
-                image: bitnami/kubectl:1.31.3
+                image: bitnami/kubectl:1.36.0
                 command:
                 - cat
                 tty: true
