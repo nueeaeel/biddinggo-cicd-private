@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
       - name: biddinggo-web
-        image: ghcr.io/nueeaeel/biddinggo-frontend:19
+        image: ghcr.io/nueeaeel/biddinggo-frontend:21
         envFrom:
         - configMapRef:
             name: biddinggo-frontend-config
