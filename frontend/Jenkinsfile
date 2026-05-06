@@ -1,33 +1,5 @@
 pipeline {
-    agent {
-        kubernetes {
-            yaml '''
-            apiVersion: v1
-            kind: Pod
-            metadata:
-              name: jenkins-agent-frontend
-            spec:
-              containers:
-              - name: docker
-                image: docker:29.4.1-cli-alpine3.23
-                command:
-                - cat
-                tty: true
-                volumeMounts:
-                - mountPath: "/var/run/docker.sock"
-                  name: docker-socket
-              - name: git
-                image: alpine/git:2.45.2
-                command:
-                - cat
-                tty: true
-              volumes:
-              - name: docker-socket
-                hostPath:
-                  path: "/var/run/docker.sock"
-            '''
-        }
-    }
+    agent any
 
     environment {
         DOCKER_IMAGE_NAME = 'biddinggo-frontend'
@@ -39,26 +11,14 @@ pipeline {
     }
 
     stages {
-        stage('Checkout Source') {
-            steps {
-                container('git') {
-                    checkout scm
-                    sh 'git config --global --add safe.directory "$WORKSPACE"'
-                    sh 'git status --short'
-                }
-            }
-        }
-
         stage('Check CI Skip') {
             steps {
-                container('git') {
-                    script {
-                        def skipStatus = sh(script: 'git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
-                        env.SKIP_PIPELINE = skipStatus == 0 ? 'true' : 'false'
-                        if (env.SKIP_PIPELINE == 'true') {
-                            env.SKIP_REASON = 'latest commit contains [skip ci]'
-                            echo 'Skipping build because the latest commit contains [skip ci].'
-                        }
+                script {
+                    def skipStatus = sh(script: 'git rev-parse --is-inside-work-tree >/dev/null 2>&1 && git log -1 --pretty=%B | grep -q "\\[skip ci\\]"', returnStatus: true)
+                    env.SKIP_PIPELINE = skipStatus == 0 ? 'true' : 'false'
+                    if (env.SKIP_PIPELINE == 'true') {
+                        env.SKIP_REASON = 'latest commit contains [skip ci]'
+                        echo 'Skipping build because the latest commit contains [skip ci].'
                     }
                 }
             }
@@ -69,27 +29,25 @@ pipeline {
                 expression { env.SKIP_PIPELINE != 'true' }
             }
             steps {
-                container('docker') {
-                    script {
-                        def buildNumber = "${env.BUILD_NUMBER}"
-                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
-                            sh 'docker -v'
-                            sh 'echo $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                            sh '''
-                                set -a
-                                . infra/env/frontend.env
-                                set +a
+                script {
+                    def buildNumber = "${env.BUILD_NUMBER}"
+                    withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
+                        sh 'docker -v'
+                        sh 'echo $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                        sh '''
+                            set -a
+                            . infra/env/frontend.env
+                            set +a
 
-                                docker build --no-cache \
-                                  --label "org.opencontainers.image.source=$GITHUB_REPOSITORY_URL" \
-                                  --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL" \
-                                  --build-arg VITE_TOSS_CLIENT_KEY="$VITE_TOSS_CLIENT_KEY" \
-                                  -t $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION \
-                                  -t $GHCR_IMAGE_NAME:latest \
-                                  frontend
-                            '''
-                            sh 'docker image inspect $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                        }
+                            docker build --no-cache \
+                              --label "org.opencontainers.image.source=$GITHUB_REPOSITORY_URL" \
+                              --build-arg VITE_API_BASE_URL="$VITE_API_BASE_URL" \
+                              --build-arg VITE_TOSS_CLIENT_KEY="$VITE_TOSS_CLIENT_KEY" \
+                              -t $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION \
+                              -t $GHCR_IMAGE_NAME:latest \
+                              frontend
+                        '''
+                        sh 'docker image inspect $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
                     }
                 }
             }
@@ -100,16 +58,14 @@ pipeline {
                 expression { env.SKIP_PIPELINE != 'true' }
             }
             steps {
-                container('docker') {
-                    script {
-                        def buildNumber = "${env.BUILD_NUMBER}"
-                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
-                            withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
-                                sh 'echo $GITHUB_TOKEN | docker login $GHCR_REGISTRY -u $GITHUB_USER --password-stdin'
-                                sh 'docker push $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
-                                sh 'docker push $GHCR_IMAGE_NAME:latest'
-                                sh 'docker logout $GHCR_REGISTRY'
-                            }
+                script {
+                    def buildNumber = "${env.BUILD_NUMBER}"
+                    withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
+                        withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
+                            sh 'echo $GITHUB_TOKEN | docker login $GHCR_REGISTRY -u $GITHUB_USER --password-stdin'
+                            sh 'docker push $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION'
+                            sh 'docker push $GHCR_IMAGE_NAME:latest'
+                            sh 'docker logout $GHCR_REGISTRY'
                         }
                     }
                 }
@@ -121,24 +77,21 @@ pipeline {
                 expression { env.SKIP_PIPELINE != 'true' }
             }
             steps {
-                container('git') {
-                    script {
-                        def buildNumber = "${env.BUILD_NUMBER}"
-                        withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
-                            withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
-                                sh 'git config --global --add safe.directory "$WORKSPACE"'
-                                sh 'git config user.name "jenkins-bot"'
-                                sh 'git config user.email "jenkins-bot@users.noreply.github.com"'
-                                sh 'git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/nueeaeel/biddinggo-cicd-private.git'
-                                sh 'git fetch origin main'
-                                sh 'git checkout -B main origin/main'
-                                sh 'sed -i "s|image: $GHCR_IMAGE_NAME:.*|image: $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION|" $DEPLOYMENT_MANIFEST'
-                                sh 'git diff -- $DEPLOYMENT_MANIFEST'
-                                sh 'git add $DEPLOYMENT_MANIFEST'
-                                sh 'git commit -m "ci: update frontend image to $DOCKER_IMAGE_VERSION [skip ci]"'
-                                sh 'git pull --rebase origin main'
-                                sh 'git push origin HEAD:main'
-                            }
+                script {
+                    def buildNumber = "${env.BUILD_NUMBER}"
+                    withEnv(["DOCKER_IMAGE_VERSION=${buildNumber}"]) {
+                        withCredentials([usernamePassword(credentialsId: 'github-token', usernameVariable: 'GITHUB_USER', passwordVariable: 'GITHUB_TOKEN')]) {
+                            sh 'git config user.name "jenkins-bot"'
+                            sh 'git config user.email "jenkins-bot@users.noreply.github.com"'
+                            sh 'git remote set-url origin https://$GITHUB_USER:$GITHUB_TOKEN@github.com/nueeaeel/biddinggo-cicd-private.git'
+                            sh 'git fetch origin main'
+                            sh 'git checkout -B main origin/main'
+                            sh 'sed -i "s|image: $GHCR_IMAGE_NAME:.*|image: $GHCR_IMAGE_NAME:$DOCKER_IMAGE_VERSION|" $DEPLOYMENT_MANIFEST'
+                            sh 'git diff -- $DEPLOYMENT_MANIFEST'
+                            sh 'git add $DEPLOYMENT_MANIFEST'
+                            sh 'git commit -m "ci: update frontend image to $DOCKER_IMAGE_VERSION [skip ci]"'
+                            sh 'git pull --rebase origin main'
+                            sh 'git push origin HEAD:main'
                         }
                     }
                 }
